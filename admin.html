@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Admin Dashboard - Slot Machine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="admin.css">
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+    // ข้อมูล Config ของคุณ
+    const firebaseConfig = {
+        apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
+        authDomain: "slot-machine-ff297.firebaseapp.com",
+        databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "slot-machine-ff297",
+        storageBucket: "slot-machine-ff297.firebasestorage.app",
+        messagingSenderId: "196859530049",
+        appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
+    };
+
+    // เริ่มต้น Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database(); // ตัวแปรนี้จะใช้คุยกับฐานข้อมูลครับ
+    </script>
+    
+</head>
+<body>
+
+<div class="dashboard">
+    <h1>⚙️ ระบบจัดการรางวัล (Admin)</h1>
+
+    <div class="queue-control">
+        <button class="btn-add-customer" onclick="addCustomer()">➕ เพิ่มชื่อลูกค้าเพื่อเริ่มเล่น</button>
+        <div class="current-queue" id="current-queue-list">
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin-top: 10px;">คิวปัจจุบัน: ยังไม่มีลูกค้าในคิว</p>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h2>ความคืบหน้ารอบนี้</h2>
+            <p id="count-display">0 / 100</p>
+        </div>
+        <div class="stat-card" style="border-left-color: #27ae60;">
+            <h2>คงเหลือใน Stock</h2>
+            <p id="total-left-display">0</p>
+        </div>
+    </div>
+
+
+
+    <div class="admin-container">
+        <div class="config-card current-round">
+            <div class="card-header">
+                <h3>🎰 รอบปัจจุบัน (กำลังใช้งาน)</h3>
+                <div id="current-status" class="status-tag running">Active</div>
+            </div>
+            <div id="config-grid-current" class="config-grid"></div>
+            <div class="card-footer">
+                <div id="total-check-current" class="total-text">รวม: 0 / 100</div>
+                <button class="btn-save btn-reset" onclick="saveStock(false)">
+                    🔄 รีเซ็ตรอบปัจจุบันใหม่
+                </button>
+            </div>
+        </div>
+
+        <div class="config-card next-round">
+            <div class="card-header">
+                <h3>⏳ ตั้งค่ารอบถัดไป (คิว)</h3>
+                <div id="next-status" class="status-tag pending">Waiting</div>
+            </div>
+            <div id="config-grid-next" class="config-grid"></div>
+            <div class="card-footer">
+                <div id="total-check-next" class="total-text">รวม: 0 / 100</div>
+                <button class="btn-save btn-queue" onclick="saveStock(true)">
+                    💾 บันทึกคิวรอบถัดไป
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="next-round-summary-card">
+        <div class="summary-header">
+            <h4>📋 ข้อมูลที่บันทึกไว้ในรอบถัดไป</h4>
+        </div>
+        <div class="summary-content">
+            <table class="simple-summary-table">
+                <thead>
+                    <tr>
+                        <th>ของรางวัล</th>
+                        <th style="text-align: right;">จำนวนที่รอคิว</th>
+                    </tr>
+                </thead>
+                <tbody id="next-summary-body">
+                    </tbody>
+                <tfoot>
+                    <tr style="border-top: 2px solid #444;">
+                        <td><b>รวมทั้งหมด</b></td>
+                        <td style="text-align: right;"><b id="next-summary-total">0 / 100</b></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+        
+
+    <div class="inventory-section">
+        <h3>📦 คลังสินค้าคงเหลือจริง</h3>
+        <div id="inventory-grid" class="inventory-grid"></div>
+    </div>
+
+    <div class="history-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>🏆 รายชื่อผู้โชคดี (แสดงตามลำดับ)</h3>
+            <button onclick="exportToExcel()" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-family: 'Kanit', sans-serif;">
+               ดาวน์โหลดรายงาน
+            </button>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ลำดับ</th>
+                    <th>ชื่อลูกค้า</th>
+                    <th>รางวัลที่ได้รับ</th>
+                    <th>วัน/เดือน/ปี เวลา</th>
+                </tr>
+            </thead>
+            <tbody id="history-table-body"></tbody>
+        </table>
+
+        <div id="pagination-controls" 
+            style="display: flex; 
+                    justify-content: center; 
+                    align-items: center; 
+                    gap: 10px; 
+                    margin-top: 20px; 
+                    flex-wrap: wrap; 
+                    padding: 0 20px;">
+        </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetSystem()">⚠️ ล้างข้อมูลทั้งหมด</button>
+</div>
+
+
+
+<script src="admin.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+</body>
+</html>
+

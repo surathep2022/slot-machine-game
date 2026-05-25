@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Machine - Image Background</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">    
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+  
+    <link rel="stylesheet" href="Slot.css">
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        // ข้อมูล Config ของคุณ
+        const firebaseConfig = {
+            apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
+            authDomain: "slot-machine-ff297.firebaseapp.com",
+            databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "slot-machine-ff297",
+            storageBucket: "slot-machine-ff297.firebasestorage.app",
+            messagingSenderId: "196859530049",
+            appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
+        };
+
+        // เริ่มต้น Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database(); // ตัวแปรนี้จะใช้คุยกับฐานข้อมูลครับ
+        // ดึงข้อมูลคิวจาก Firebase
+        db.ref('customerQueue').on('value', (snapshot) => {
+            const queue = snapshot.val() || [];
+            // นำ queue ไปแสดงผลในหน้าจอ (แทนที่ localStorage.getItemเดิม)
+            updatePlayerInterface(queue); 
+        });
+
+    </script>
+
+</head>
+<body>
+    <!-- <div class="star-background">
+        <div class="meteor"></div>
+        <div class="meteor"></div>
+        <div class="meteor"></div>
+        <div class="meteor"></div>
+        <div class="meteor"></div>
+        <div class="meteor"></div>
+        <div class="meteor"></div>
+        <div class="meteor"></div>
+    </div> -->
+
+    <!-- <img src="header.png" class="header-image" alt="Header"> -->
+    
+    <div class="slot-machine">
+        <div id="current-player-display" class="player-banner">
+           <span id="player-name">-</span>
+        </div>
+
+        <div class="slot-window">
+            <div class="arrow-indicator arrow-left">▶</div>
+            <div class="arrow-indicator arrow-right">◀</div>
+            <div class="center-highlight"></div>
+            <div id="slot-container" class="slot-container">
+                <div class="slot-item">READY</div>
+            </div>
+        </div>
+    </div>   
+
+
+    <div class="ball"></div>        
+    <div class="ball"></div>
+     
+       <div class="sponsor-section">     
+            <div class="sponsor-logos">
+                <img src="sponsored.png" width="650px" alt="Sponsor 1">         
+            </div>
+        </div>
+        
+       <button id="spin-btn" >หมุนรางวัล !</button> 
+
+    <audio id="spin-audio" src="sound/spin.mp3"></audio>
+    <audio id="win-audio" src="sound/small-win.wav"></audio>    
+</body>
+ 
+<script src="Slot.js"></script>
+ 
+
+</html>

@@ -1,0 +1,577 @@
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start;
+            margin: 0; 
+            height: 100vh; 
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+
+           
+             background-image: linear-gradient(
+                to bottom right,
+                #91defe,
+                #99c0f9,
+                #bdb6ec,
+                #d7b3e3,
+                #efb3d5,
+                #f9bccc
+            );
+            background-size: cover;
+            color: white;
+            position: relative;
+        }
+        
+
+        .header-image {
+            position: fixed; /* 📌 สำคัญมาก: เพื่อให้รูปภาพติดอยู่กับด้านบนสุดของจอเสมอ */
+            top: 30px;          /* วางชิดขอบบนสุด */
+            left: 350px;         /* วางชิดขอบซ้ายสุด */
+            width: 400px;    /* ยืดเต็มความกว้างหน้าจอ (Viewport Width) */
+            height: auto;    /* ปรับความสูงอัตโนมัติเพื่อรักษาสัดส่วนรูปภาพ */
+            z-index: 9999;   /* ให้อยู่ด้านบนสุดทับทุก Element อื่นๆ */
+            pointer-events: none; /* เพื่อไม่ให้รูปภาพบังการคลิกปุ่มต่างๆ ด้านล่าง (Optional) */
+          
+        }
+        /* 🏷️ สไตล์ป้ายชื่อลูกค้า */
+        .player-banner {
+            position: absolute;
+            top: -50px;           /* 📍 ปรับค่านี้เพื่อให้ป้ายขยับขึ้นไปทับขอบบน (ลอง -40 ถึง -80) */
+            left: 50%;
+            transform: translateX(-50%); /* จัดให้อยู่กึ่งกลางแนวนอน */
+            
+            background: #2c3e50;  /* สีพื้นหลังป้าย */
+            color: #f1c40f;       /* สีตัวอักษร (สีทอง/เหลือง) */
+            padding: 10px 40px;
+            border: 4px solid #3498db; 
+            border-radius: 30px;  /* ทำทรงแคปซูล */
+            font-family: 'Kanit', sans-serif;
+            font-size: 2rem;      /* ขนาดตัวอักษรสำหรับจอ 55 นิ้ว */
+            font-weight: 900;
+            white-space: nowrap;  /* ป้องกันชื่อตัดบรรทัด */
+            z-index: 20;          /* อยู่เหนือทุกส่วนของตู้ */
+                   
+        }
+
+        #player-name { color: #2ecc71; font-weight: 600; font-size: 55px; }             
+
+
+
+        /* ตู้ Slot Machine */
+        .slot-machine {
+            position: relative; 
+            z-index: 1;
+            background: #f1c40f; 
+            padding: 20px; 
+            border-radius: 35px;
+            box-shadow: 0 10px 0 #d4ac0d, 0 30px 50px rgba(0,0,0,0.6);
+            width: 500px; /*800px; */
+            height: 1440px; 
+            border: 10px solid #f39c12;         
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        /* หน้าต่างแสดงผล (เน้นให้โชว์ช่องกลางชัดๆ) */
+        .slot-window {
+            width: 100%;
+            height: 1440px; /* แสดง 6 ช่อง */
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden; 
+            position: relative; 
+            border: 10px solid #2c3e50;
+        }
+
+        /* เส้นสีแดง (ต้องอยู่กึ่งกลางช่องที่ 3 พอดี) */
+        .center-highlight {
+            height: 240px; 
+            position: absolute;
+            top: 480px; /* ช่องที่ 1(0), 2(240), 3(480) */
+            left: 0; 
+            width: 100%;
+            border-top: 6px solid #e74c3c;
+            border-bottom: 6px solid #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .slot-container {
+            position: absolute;
+            width: 100%;
+            top: 0; 
+            left: 0;
+            will-change: transform; /* ช่วยให้หมุนลื่นขึ้นบนจอใหญ่ */
+        }
+
+        .slot-item {
+            height: 240px; 
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            box-sizing: border-box; /* สำคัญ: ป้องกัน border ดันความสูง */
+        }
+
+        /* ปรับขนาดรูปให้ใหญ่ขึ้น เต็มช่องสล็อต */
+        .slot-item img {
+            width: 280px;         /* 🔄 เพิ่มความกว้างจาก 200px เป็น 280px */
+            height: 100%;         /* 🔄 ให้ความสูงขยายเต็ม 100% ของช่อง (ช่องสูง 240px) */
+            object-fit: contain;  /* 📌 สำคัญมาก: ช่วยคุมสัดส่วนภาพไม่ให้บี้หรือเบี้ยว */
+            display: block;
+            
+            /* ✨ ทริคพิเศษเพิ่มความใหญ่และมีมิติ */
+            transform: scale(1.15); /* 🔄 ขยายขนาดภาพขึ้นอีก 15% ให้ทะลุออกมาดูมีมิติ */
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); /* เพิ่มเงาให้สินค้าดูลอยเด่นออกมา */
+            transition: transform 0.2s ease;
+        }
+       
+        /* ถ้าอยากให้ดูพรีเมียมขึ้น ลองใช้ Gradient ครับ */
+        .slot-item:nth-child(odd) {
+            background: linear-gradient(to bottom, #ffffff10, #ffffff05);
+        }
+
+        .slot-item:nth-child(even) {
+            background: linear-gradient(to bottom, #00000020, #00000010);
+        }
+
+
+        /* ปุ่มกดด้านล่าง (อยู่ในตู้สีเหลือง) */
+        #spin-btn {
+            display: none;
+        }     
+
+        /* 3. ปรับให้โค้งมนทั้งหมด (All Corners Rounded) */
+        .slot-item-preview {
+            background: linear-gradient(180deg, #f9d976 0%, #f39c12 50%, #d4ac0d 100%);
+            padding: 2vh 8vw;
+            border-radius: 20px;
+            border: 6px solid #f1c40f;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 4px 0 rgba(255,255,255,0.5);
+            color: #1a252f;
+            font-size: 3.5rem; /* ใหญ่ชัดเจนบนจอ 55 นิ้ว */
+            font-weight: 800;
+            white-space: nowrap;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        /* แสงสีขาววิ่งผ่านป้าย (Shine) */
+        .shine-effect {
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-30deg);
+            animation: glint 5s infinite;
+        }
+
+        /* --- Animations --- */
+
+        /* แกว่งซ้ายขวา */
+        @keyframes swingSign {
+            0%, 100% { transform: translateX(-50%) rotate(1.5deg); }
+            50% { transform: translateX(-50%) rotate(-1.5deg); }
+        }
+
+        /* แสงวิ่ง */
+        @keyframes glint {
+            0% { left: -100%; }
+            20%, 100% { left: 150%; }
+        }
+
+        /* slot.css */
+
+        /* คลุมหน้าต่างสล็อตกับลูกศรไว้ด้วยกัน */
+        .slot-outer-wrapper {
+            position: relative;
+            padding: 0 20px; /* เว้นพื้นที่ให้ลูกศรวางข้างๆ */
+        }
+
+        .arrow-indicator {
+            position: absolute;
+            top: 43%; /* อยู่กึ่งกลางความสูงหน้าต่าง (ซึ่งคือตรงกับช่องตัดสินพอดี) */
+            transform: translateY(-50%);
+            font-size: 5rem;
+            color: #e74c3c; /* สีแดงสด */
+            text-shadow: 0 0 10px rgba(231, 76, 60, 0.8);
+            z-index: 20;
+           
+        }
+
+        .arrow-left {
+            left: -15px; /* ขยับไปทางซ้ายของหน้าต่าง */
+        }
+
+        .arrow-right {
+            right: -15px; /* ขยับไปทางขวาของหน้าต่าง */
+        }
+
+        /* อนิเมชั่นกะพริบเพื่อให้ดูน่าตื่นเต้น */
+        @keyframes blink {
+            from { opacity: 1; transform: translateY(-50%) scale(1.2); }
+            to { opacity: 0.5; transform: translateY(-50%) scale(1); }
+        }
+
+
+
+       /* คอนเทนเนอร์ที่มาแทนที่ปุ่มเดิม */
+        #lever-wrapper {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 100px;
+            height: 150px;
+            cursor: pointer;
+            background: transparent; /* ไม่มีพื้นหลังปุ่ม */
+            border: none;            /* ไม่มีเส้นขอบ */
+            outline: none;
+        }
+
+        /* ตัวก้านคันโยก */
+        .lever {
+            width: 60px;
+            height: 120px; /* ลดความสูงลงเพื่อให้พอดีกับพื้นที่ปุ่ม */
+            position: relative;
+            perspective: 400px; /* เพิ่มมิติความลึก */
+        }
+
+        /* ก้าน (Handle) */
+        .lever-handle {
+            width: 15px;
+            height: 150px;
+            background: linear-gradient(to right, #95a5a6, #2c3e50, #95a5a6);
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            transform-origin: bottom center;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 5px;
+        }
+
+        /* หัวบอล (Ball) */
+        .lever-ball {
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle at 30% 30%, #ff4b2b, #8b0000);
+            border-radius: 50%;
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        }
+
+        /* ฐาน (Base) */
+        .lever-base {
+            width: 55px;
+            height: 60px;
+            background: #2c3e50;
+            border-radius: 50% 50% 1px 5px;
+            margin:  0;
+            position: relative;
+            z-index: 1;
+            box-shadow: inset 0 4px 5px rgba(0,0,0,0.5);
+        }
+
+        /* 🎬 แอนิเมชันตอนถูกดึง (Pulling) */
+        .lever.pulling .lever-handle {
+            transform: rotateX(-45deg) scaleY(0.8); /* เอียงก้านลงเหมือนโดนกดเข้าหาจอ */
+        }
+
+        /* กรณีปุ่ม Disabled (คิวว่าง) ให้ก้านดูจางลง */
+        #spin-btn.disabled, #spin-btn[disabled] {
+            opacity: 0.3;
+            filter: grayscale(1);
+            cursor: not-allowed;
+            pointer-events: none; /* กดไม่ได้ */
+        }
+
+        /* คอนเทนเนอร์หลักที่หุ้มทั้งจอยและคันโยก */
+        .controls-wrapper {
+            position: relative; /* ต้องใส่เพื่อให้ z-index ทำงาน */
+            z-index: 10;
+            display: flex;             /* เปิดใช้ Flexbox */
+            align-items: center;       /* จัดให้กึ่งกลางแนวตั้งตรงกัน */
+            justify-content: center;    /* วางไว้ตรงกลางหน้าจอแนวนอน */
+            gap: 25px;                 /* ระยะห่างระหว่างจอยกับคันโยก */
+            padding: 20px;
+             /* พื้นหลังจางๆ ให้ดูเป็นแผงเดียวกัน */
+            /* background: rgba(0, 0, 0, 0.2); */
+            border-radius: 50px;
+            margin: 10px;
+            width: fit-content;        /* ปรับขนาดตามเนื้อหาด้านใน */
+        }
+
+        /* ปรับระยะของคันโยกให้สมดุล */
+        #lever-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 120px; /* ความสูงให้พอดีกับ D-pad */
+            margin-top: -80px;
+        }
+
+        /* ใช้ CSS เดิมที่คุณมีสำหรับ .dpad และ .lever ได้เลย */
+
+        /* คอนเทนเนอร์จอย (ฐานรองปุ่ม) */
+        .dpad-container {
+            display: inline-block;
+            padding: 20px;
+            background: #2a2a2a; 
+            /* สีเทาเข้มแบบตัวเครื่อง */
+            border-radius: 150px;
+            box-shadow: 
+                inset 0 2px 10px rgba(0,0,0,0.5),
+                0 10px 20px rgba(0,0,0,0.4);
+            margin-top: 40px;
+        }
+
+
+        /* จัดวาง D-Pad รูปบวก */
+        .dpad-plus {
+            display: grid;
+            grid-template-columns: repeat(3, 60px); /* 3 คอลัมน์ */
+            grid-template-rows: repeat(3, 60px);    /* 3 แถว */
+            gap: 8px; /* ระยะห่างระหว่างปุ่ม */
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ปุ่มสีแดงมีมิติ (ใช้ Style เดิมที่คุณชอบ) */
+        .dpad-btn {
+            width: 60px;
+            height: 60px;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #ff4b2b, #dc2626);
+            border-radius: 12px;
+            box-shadow: 
+                0 6px 0 #991b1b, 
+                0 8px 15px rgba(0,0,0,0.4),
+                inset 0 2px 4px rgba(255,255,255,0.3);
+            transition: all 0.1s ease;
+        }
+
+        .dpad-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #7f1d1d, 0 3px 10px rgba(0,0,0,0.3);
+        }
+
+        /* จุดศูนย์กลางเครื่องหมายบวก */
+        .dpad-center {
+            width: 60px;
+            height: 60px;
+            background: #1a1a1a; /* สีดำเข้ม */
+            border-radius: 8px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        /* ช่องว่างมุม 4 ด้าน (ไม่ต้องแสดงผล) */
+        .grid-empty {
+            width: 60px;
+            height: 60px;
+        }
+
+
+        /* คอนเทนเนอร์ดาวตก */
+        .star-background {
+            position: absolute; /* ใช้ absolute เพื่อให้อยู่ในกรอบของ body */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent; /* สำคัญ! ต้องโปร่งใสเพื่อเห็นรูป body */
+            z-index: 1; /* เลข 1 เพื่อให้อยู่ทับรูปพื้นหลัง */
+            overflow: hidden;
+            pointer-events: none; /* เพื่อไม่ให้ตัวมันขวางการคลิกปุ่ม */
+        }
+
+        /* ส่วนของ .meteor และ @keyframes ใช้โค้ดเดิมได้เลย */
+        .meteor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 100%;
+            box-shadow: 0 0 15px #fff;
+            animation: meteor-fall 3s linear infinite;
+            opacity: 0;
+            z-index: 2; /* ดาวตกอยู่ชั้นบนขึ้นมาอีกนิด */
+        }
+
+        /* สร้างหางของดาวตก */
+        .meteor::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 150px; /* ความยาวหาง */
+            height: 1px;
+            background: linear-gradient(90deg, #fff, transparent);
+        }
+
+        /* อนิเมชั่นพุ่งเฉียง */
+        @keyframes meteor-fall {
+            0% {
+                transform: rotate(315deg) translateX(0);
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            100% {
+                transform: rotate(315deg) translateX(-1500px); /* พุ่งยาวๆ */
+                opacity: 0;
+            }
+        }
+
+        /* สุ่มตำแหน่งและเวลาเกิดของดาวตกแต่ละดวง */
+        .meteor:nth-child(1) { top: 0; right: 0; animation-delay: 0s; animation-duration: 1s; }
+        .meteor:nth-child(2) { top: 0; right: 200px; animation-delay: 1s; animation-duration: 1.5s; }
+        .meteor:nth-child(3) { top: 0; right: 400px; animation-delay: 2s; animation-duration: 2s; }
+        .meteor:nth-child(4) { top: 0; right: 600px; animation-delay: 3s; animation-duration: 2.5s; }
+        .meteor:nth-child(5) { top: 100px; right: 0; animation-delay: 4s; animation-duration: 3s; }
+        .meteor:nth-child(6) { top: 200px; right: 200px; animation-delay: 5s; animation-duration: 1.2s; }
+        .meteor:nth-child(7) { top: 0; right: 800px; animation-delay: 1.5s; animation-duration: 1.8s; }
+        .meteor:nth-child(8) { top: 300px; right: 400px; animation-delay: 2.5s; animation-duration: 2.2s; }
+
+        .ready-box {
+            background: linear-gradient(145deg, #e74c3c, #c0392b); /* สีแดงไล่เฉด */
+            color: white;
+            padding: 30px 50px;
+            border-radius: 15px;
+            font-size: 4rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            border: 4px solid #fff;
+            animation: pulse 1.5s infinite; /* เพิ่มเอฟเฟกต์กะพริบ */
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+      
+
+        .ball {
+            position: fixed;
+            bottom: -250px; /* เริ่มต้นที่นอกขอบจอด้านล่าง */
+            left: 50%; /* หรือใช้ JS สุ่มตำแหน่ง left */
+            height: 200px;
+            width: 200px;
+            border-radius: 50%;
+            
+            /* เอฟเฟกต์สีเดิมของคุณ */
+            background: radial-gradient(circle at 75% 30%, white 5px, aqua 8%, darkblue 60%, aqua 100%);
+            box-shadow: inset 0 0 20px #fff, inset 10px 0 46px #eaf5fc,
+                        inset 88px 0px 60px #c2d8fe, inset -20px -60px 100px #fde9ea,
+                        inset 0 50px 140px #fde9ea, 0 0 90px #fff;
+
+            /* 🚀 เรียกใช้ Animation ลอยขึ้น */
+            animation: bubbleUp 8s linear infinite; 
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+      /* 🎬 Animation ลอยจากล่างขึ้นบน */
+        @keyframes bubbleUp {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            50% {
+                /* เพิ่ม translateX เล็กน้อยเพื่อให้ดูลอยส่ายไปมาธรรมชาติ */
+                transform: translateY(-60vh) translateX(50px);
+            }
+            100% {
+                transform: translateY(-120vh) translateX(-20px);
+                opacity: 0;
+            }
+        }
+
+        /* ส่วนของรูปภาพสินค้าข้างใน (ตามที่คุณต้องการ) */
+        .ball img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px white);
+        }
+        .shadow {
+            background: #b490b2;
+            width: 150px;
+            height: 40px;
+            top: 70%;
+            animation: expand 4s infinite;
+            position: absolute;
+            border-radius: 50%;
+            }
+            @keyframes expand {
+            0%,
+            100% {
+                transform: scale(0.5);
+            }
+
+            50% {
+                transform: scale(1);
+            }
+        }
+
+        @media only screen and (max-width: 500px) {
+            .ball {
+                animation: float 4.5s ease-in-out infinite;
+                height: 120px;
+                width: 120px;
+
+                background: radial-gradient(
+                circle at 65% 35%,
+                white 5px,
+                aqua 15%,
+                darkblue 50%,
+                aqua 100%
+                );
+                box-shadow: inset 0 -20px 30px #fff, inset 40px 0 46px #eaf5fc,
+                inset 58px 0px 60px #c2d8fe, inset -8px -30px 100px #fde9ea,
+                inset 0 20px 110px #fde9ea, 0 0 90px #fff;
+            }
+            .shadow {
+                width: 90px;
+                height: 20px;
+                top: 78%;
+                animation: expand 5s infinite;
+            }
+
+            @keyframes float {
+                0% {
+                transform: translatey(0px);
+                }
+                50% {
+                transform: translatey(-50px);
+                }
+                100% {
+                transform: translatey(0px);
+                }
+            }
+        }
+
+
+
+    
