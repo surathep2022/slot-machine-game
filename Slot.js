@@ -26,6 +26,7 @@ const prizes = [
 let dbQueue = [];
 let dbStock = {};
 let dbTotalSpins = 0;
+let lastWonPrizeName = "";
 
 // ฟังก์ชันสร้าง Pattern 6 ช่อง (5 สินค้า + 1 READY ที่ตำแหน่ง index 2)
 function getBasePattern() {
@@ -48,9 +49,9 @@ function createItemElement(item) {
     if (item.isReady) {
         div.innerHTML = `<div class="ready-box">READY</div>`;
     } else {
-        // ดึงสไตล์ความสูง/กว้างออกไปคุมผ่าน CSS class (.slot-item img) เพื่อสเกลภาพให้ใหญ่เต็มตา
+        // 🛠️ ซ่อมสไตล์แอตทริบิวต์ style="" ให้ถูกต้องเพื่อให้ภาพแสดงผลเต็มตา
         div.innerHTML = `
-            <img src="${item.image}" object-fit: contain; display: block;">
+            <img src="${item.image}" style="object-fit: contain; display: block;">
         `;
     }
     return div;
@@ -64,35 +65,67 @@ function initSlotDisplay() {
     slotContainer.innerHTML = '';
     slotContainer.style.transition = 'none';
     
-    const pattern = getBasePattern(); // ในนี้มี READY อยู่ที่ Index 2 แล้ว
+    const pattern = getBasePattern(); 
     pattern.forEach(item => {
         slotContainer.appendChild(createItemElement(item));
     });
     
-    // 🔄 ปรับจาก -400px เป็น 0px เพื่อให้สอดคล้องกับจุดเริ่มต้นการคำนวณพิกเซลที่แม่นยำ
     slotContainer.style.transform = `translateY(0px)`;
 }
 // เรียกใช้งานทันทีเมื่อโหลดไฟล์
 initSlotDisplay();
 
-// 3. --- Firebase Logic & Interface ---
+// 2. --- ฟังก์ชันล้าง/แปลงชื่อ สำหรับนำไปแสดงผลบนหน้าจอหน้าตู้ ---
+function formatDisplayName(fullName) {
+    if (!fullName) return "ไม่ระบุชื่อ";
+    
+    // ตัดเอาเฉพาะชื่อจริงท่อนแรกก่อนช่องว่าง
+    let firstName = fullName.trim().split(' ')[0];          
+   
+
+    // 🎯 จำกัด 10 ตัวอักษร ถ้าชื่อยาวเกินให้หั่นเหลือ 10 แล้วเติม xxxxxx
+    if (firstName.length > 10) {
+        firstName = firstName.substring(0, 10) + "xxxxxx";
+    }
+    
+    return firstName;
+}
+
+// 3. --- ฟังก์ชันอัปเดต UI รายชื่อคิวลูกค้าด้านล่าง ---
+function updateQueueListUI() {
+    const queueDiv = document.getElementById('current-queue-list');
+    if (!queueDiv) return;
+
+    const uniqueQueue = [...new Set(dbQueue)];
+
+    queueDiv.innerHTML = uniqueQueue.length > 0 ? uniqueQueue.map((n, i) => {
+        const formattedName = formatDisplayName(n);
+        return `<span class="queue-badge ${i === 0 ? 'active' : ''}">${i === 0 ? '▶ ' : ''}${formattedName}</span>`;
+    }).join('') : `<p>ยังไม่มีลูกค้าในคิว</p>`;
+}
 
 function updatePlayerInterface() {
     if (!btn) return;
     const display = document.getElementById('current-player-display');
     const nameSpan = document.getElementById('player-name');
 
-    if (dbQueue && dbQueue.length > 0) {
+    const uniqueQueue = [...new Set(dbQueue)];
+
+    if (uniqueQueue && uniqueQueue.length > 0) {
         if (display) display.style.display = 'block';
-        if (nameSpan) nameSpan.textContent = dbQueue[0];
-        btn.disabled = isSpinning;
+        
+        const formattedName = formatDisplayName(uniqueQueue[0]);
+        if (nameSpan) nameSpan.textContent = formattedName;
+        
+        // 🎯 เช็คให้ชัวร์ว่าถ้าสล็อตไม่ได้กำลังหมุนอยู่ ต้องปล่อยให้ปุ่ม disabled เป็น false เสมอ
+        btn.disabled = isSpinning; 
     } else {
         if (display) display.style.display = 'none';
         btn.disabled = true;
     }
 }
 
-// 3. ฟังก์ชันบันทึกข้อมูลไป Firebase
+// 4. ฟังก์ชันบันทึกข้อมูลไป Firebase
 function saveResultToFirebase(customerName, prizeName) {
     // A. บันทึกประวัติผู้ชนะ
     db.ref('prizeHistory').push({
@@ -111,14 +144,9 @@ function saveResultToFirebase(customerName, prizeName) {
     db.ref('totalSpins').transaction((count) => {
         return (count || 0) + 1;
     });
-
-    // D. ตัดชื่อออกจากคิวใน Firebase
-    // let updatedQueue = [...dbQueue];
-    // updatedQueue.shift();
-    // db.ref('customerQueue').set(updatedQueue);
 }
 
-// 4. ฟังก์ชันหลักในการหมุน
+// 5. ฟังก์ชันหลักในการหมุน
 async function startSpin() {
     if (isSpinning) return;
 
@@ -177,9 +205,28 @@ async function startSpin() {
         return;
     }
 
-    const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-    const targetIdx = availablePrizes[randomIndex];
-    const winPrize = prizes[targetIdx];
+    // 🎯 🚩 [ปรับปรุงจุดที่ 1: ตรรกะสุ่มแบบไม่ซ้ำชิ้นเดิมกับตาที่แล้ว]
+    let targetIdx = -1;
+    let winPrize = null;
+    let attempts = 0; 
+
+    while (attempts < 10) {
+        const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+        targetIdx = availablePrizes[randomIndex];
+        winPrize = prizes[targetIdx];
+
+        // ตรวจเช็คประเภทของรางวัลที่เหลืออยู่ในสต็อกทั้งหมด
+        const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
+        
+        // เงื่อนไข: ถ้าสุ่มได้ชื่อไม่ซ้ำกับรอบที่แล้ว (lastWonPrizeName) หรือเหลือของในคลังแค่ประเภทเดียวแล้ว ให้ผ่านได้เลย
+        if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
+            break;
+        }
+        attempts++;
+    }
+
+    // บันทึกชื่อรางวัลนี้ไว้ เช็คกับคิวคนถัดไป
+    lastWonPrizeName = winPrize.name; 
 
     // --- เริ่มสถานะหมุน ---
     isSpinning = true;
@@ -196,38 +243,31 @@ async function startSpin() {
     saveResultToFirebase(currentCustomer, winPrize.name);
 
     // --- อนิเมชั่นหน้าตู้ ---
-
-    // 1. ล้างข้อมูลเก่าก่อนหมุนรอบใหม่
     slotContainer.innerHTML = '';
     slotContainer.style.transition = 'none';
-    slotContainer.style.transform = 'translateY(0px)'; // 🔄 เริ่มหมุนจากพิกเซล 0 เสมอเพื่อให้สอดคล้องกับแอนิเมชัน
+    slotContainer.style.transform = 'translateY(0px)';
 
-    // 2. สร้างรูปเรียงต่อกันหลอกๆ
     for (let i = 0; i <= fakeItemsCount + 5; i++) {
         const item = document.createElement('div');
         item.className = 'slot-item';
         
         if (i === 2) { 
-            // ช่องที่ 3 (Index 2) คือตำแหน่งที่ตรงกับเส้นแดงตอนเริ่มต้น
             item.innerHTML = `<div class="ready-box">READY</div>`;
         } else if (i === fakeItemsCount) {
-            // 🎯 รูปรางวัลจริงที่สุ่มได้จะถูกใส่ไว้ตรงตำแหน่งพิกเซลที่ล็อกเป้าหมายไว้พอดี
             const img = document.createElement('img');
             img.src = winPrize.image;
+            img.style.cssText = "object-fit: contain; display: block;";
             item.appendChild(img);
         } else {
-            // 🎲 รูปสุ่มอื่นๆ สำหรับวิ่งผ่านตา
             const rand = prizes[i % prizes.length];
             const img = document.createElement('img');
             img.src = rand.image;
-            img.style.opacity = "0.8";
+            img.style.cssText = "opacity: 0.8; object-fit: contain; display: block;";
             item.appendChild(img);
         }
         slotContainer.appendChild(item);
     }
 
-    // 🚩 [สูตรแก้ไขตัวพิกเซลเพี้ยน]:
-    // คำนวณจุดหยุด: (จำนวนช่องหลอกที่วิ่งมา * ความสูงช่อง 240px) - ระยะเยื้องของเส้นแดงจากขอบบนหน้าต่างตู้สล็อต (480px)
     const centerHighlightTop = 480; 
     const stopPosition = (fakeItemsCount * itemHeight) - centerHighlightTop;
 
@@ -245,11 +285,8 @@ async function startSpin() {
             winAudio.play().catch(e => console.log("Win audio failed:", e));
         }
 
-        // 🔄 1. สร้างตัวแปรเก็บโครงสร้าง HTML ของรูปรางวัลพิเศษแบบสลับกัน
         let specialPrizeHTML = '';
-        
         if (dbTotalSpins % 2 === 0) {
-            // ถ้ารอบสะสมหารสองลงตัว (เลขคู่) ให้แสดง แลคตาซอย
             specialPrizeHTML = `
                 <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
                     <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 1.2rem;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
@@ -257,7 +294,6 @@ async function startSpin() {
                 </div>
             `;
         } else {
-            // ถ้ารอบสะสมหารสองไม่ลงตัว (เลขคี่) ให้แสดง ฮาร์ทบีท
             specialPrizeHTML = `
                 <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
                     <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 1.2rem;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
@@ -266,67 +302,104 @@ async function startSpin() {
             `;
         }
 
-        // 2. เรียกใช้งานใน Swal.fire ปกติ
         Swal.fire({
-            title: `ยินดีด้วย คุณ ${currentCustomer}!`,
+            title: `ยินดีด้วย คุณ ${formatDisplayName(currentCustomer)}!`,
             html: `
                 ได้รับ: <b style="color:#e74c3c; font-size: 2rem;">${winPrize.name}</b>
                 <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
                     <img src="${winPrize.image}" style="width:300px; height:300px; object-fit:contain;">
                 </div>
-                
                 ${specialPrizeHTML}
             `,
             icon: 'success',
             confirmButtonText: 'ตกลง',
-            allowOutsideClick: false
+            allowOutsideClick: false,
+            timer: 15000,              // ⏳ ปิดหน้าต่างอัตโนมัติใน 15 วินาที
+            timerProgressBar: true     // แสดงแถบเวลาวิ่งด้านล่าง
         }).then(() => {
-
-            // 🎯 🔥 [จุดสำคัญ] สั่งตัดชื่อคนแรกออกจากคิวบน Firebase หลังจากกดปุ่ม OK ตรงนี้!
+            // สั่งตัดคิวคนแรกออกบน Firebase หลังกดตกลง หรือหมดเวลา
             if (dbQueue && dbQueue.length > 0) {
                 let updatedQueue = [...dbQueue];
-                updatedQueue.shift(); // ลบคนแรกที่เพิ่งเล่นเสร็จออก
-                
-                // อัปเดตคิวใหม่กลับไปที่ Firebase (เมื่อ Firebase อัปเดต คิวถัดไปจะขึ้นโชว์ทันที)
+                updatedQueue.shift(); 
                 db.ref('customerQueue').set(updatedQueue);
             }
             
             isSpinning = false;
-            slotContainer.style.transition = 'none'; 
             
-            // รีเซ็ตการขยับสล็อตกลับมาที่จุดเริ่มต้นสมดุลเพื่อรอผู้เล่นคิวถัดไป
+            // 🎯 🚩 [แก้ไขปัญหาคนที่ 2 กดไม่ได้]: สั่งคืนสถานะปุ่มกายภาพเป็นเปิดใช้งานทันที
+            if (btn) {
+                btn.disabled = false; 
+            }
+            
+            slotContainer.style.transition = 'none'; 
             slotContainer.style.transform = 'translateY(0px)'; 
             
             initSlotDisplay(); 
-            updatePlayerInterface();
+            updatePlayerInterface(); // อัปเดตหน้าจอเพื่อเปลี่ยนชื่อคิวถัดไปให้พร้อมทำงาน
         });
     }, 5500);
 }
 
-// 5. Firebase Listeners (ดึงข้อมูลแบบ Real-time)
-db.ref('customerQueue').on('value', (snapshot) => {
+// 6. --- รวม Firebase Listener ไว้จุดเดียวแบบ Single Source of Truth ป้องกันลูปค้าง ---
+db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
-    
-    if (typeof data === 'object' && !Array.isArray(data)) {
-        dbQueue = Object.keys(data).map(key => data[key].name);
+    const queueData = data.customerQueue || {};
+
+    // แปลงโครงสร้างข้อมูลคิวจาก Firebase
+    let rawQueue = [];
+    if (typeof queueData === 'object' && !Array.isArray(queueData)) {
+        rawQueue = Object.keys(queueData).map(key => {
+            const item = queueData[key];
+            return (typeof item === 'object' && item !== null && item.name) ? item.name : item;
+        });
     } else {
-        dbQueue = data;
+        rawQueue = Array.isArray(queueData) ? queueData : [];
     }
+
+    // 🎯 ตรรกะตรวจจับชื่อจริงซ้ำเฉพาะกิจ (ทำความสะอาดข้อมูลก่อนกระจายลงแอป)
+    if (rawQueue && rawQueue.length > 0) {
+        const seenFirstNames = new Set();
+        const cleanedQueue = [];
+        let hasDuplicate = false;
+
+        rawQueue.forEach(fullName => {
+            if (!fullName || typeof fullName !== 'string') return;
+            const firstName = fullName.trim().split(' ')[0];
+
+            if (!seenFirstNames.has(firstName)) {
+                seenFirstNames.add(firstName);
+                cleanedQueue.push(fullName); 
+            } else {
+                hasDuplicate = true; // ตรวจเจอตัวซ้ำ
+            }
+        });
+
+        // หากข้อมูลไม่นิ่ง สั่งปรับ Firebase ให้คลีนทันที
+        if (hasDuplicate) {
+            console.log("⚠️ ตรวจพบชื่อจริงซ้ำในระบบ! กำลังทำการล้างคิวอัตโนมัติ...");
+            db.ref('customerQueue').set(cleanedQueue);
+            return; // เด้งออกเพื่อรอรับ Snap รอบที่คลีนเสร็จแล้ว
+        }
+    }
+
+    // บันทึกสถานะลง Global Variables หลังกรองเสร็จสิ้น
+    dbQueue = rawQueue;
+    dbStock = data.currentStock || {};
+    dbTotalSpins = data.totalSpins || 0;
+
+    // อัปเดต UI หน้าจอทั้งหมดให้เสร็จสรรพ
     updatePlayerInterface();
+    updateQueueListUI();
+    
+    if (typeof updateSlotUI === 'function') {
+        updateSlotUI();
+    }
 });
 
-db.ref('currentStock').on('value', (snapshot) => {
-    dbStock = snapshot.val() || {};
-});
-
-db.ref('totalSpins').on('value', (snapshot) => {
-    dbTotalSpins = parseInt(snapshot.val() || 0);
-});
-
-// 6. Events
+// 7. Events
 btn.addEventListener('click', startSpin);
 
-// --- การรองรับคีย์บอร์ด (Enter, Spacebar, ตัวเลข 1-9 และสัญลักษณ์) ---
+// --- การรองรับคีย์บอร์ด ---
 window.addEventListener('keydown', function(e) {
     const isEnter = (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter');
     const isSpace = (e.code === 'Space');
@@ -356,12 +429,12 @@ window.addEventListener('keydown', function(e) {
 
 // --- ฟังก์ชันลูกบอลพื้นหลังลอย ---
 function createFloatingBubble() {
+    if(isSpinning) return; // ไม่สร้างเพิ่มระหว่างหมุนสล็อตเพื่อลดอาการกระตุกของหน้าจอ
     const ball = document.createElement('div');
     ball.className = 'ball';
     
     const randomImg = prizes[Math.floor(Math.random() * prizes.length)].image;
     ball.innerHTML = `<img src="${randomImg}">`;
-
     ball.style.left = Math.random() * 90 + '%';
     
     const size = Math.random() * (250 - 150) + 150;
@@ -373,30 +446,6 @@ function createFloatingBubble() {
 
     document.body.appendChild(ball);
 
-    setTimeout(() => {
-        ball.remove();
-    }, duration * 1000);
+    setTimeout(() => { ball.remove(); }, duration * 1000);
 }
-
 setInterval(createFloatingBubble, 2000);
-
-// --- รับฟังอัปเดตหลักเพื่อซิงค์ข้อมูลลง UI รวม ---
-db.ref().on('value', (snapshot) => {
-    const data = snapshot.val() || {};
-    const queueData = data.customerQueue || {};
-
-    dbQueue = Object.keys(queueData).map(key => {
-        const item = queueData[key];
-        if (typeof item === 'object' && item !== null && item.name) {
-            return item.name;
-        }
-        return typeof item === 'string' ? item : "ไม่ระบุชื่อ";
-    });
-
-    dbStock = data.currentStock || {};
-    dbTotalSpins = data.totalSpins || 0;
-
-    if (typeof updateSlotUI === 'function') {
-        updateSlotUI();
-    }
-});
