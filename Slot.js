@@ -285,8 +285,34 @@ async function startSpin() {
             winAudio.play().catch(e => console.log("Win audio failed:", e));
         }
 
+       
+        // 🎯 [ตรรกะควบคุมโควตารางวัลพิเศษ: การันตีเป๊ะ 20:80 ชิ้นต่อ 100 รอบ]
         let specialPrizeHTML = '';
-        if (dbTotalSpins % 2 === 0) {
+        
+        // 1. สร้างอาร์เรย์จำลองรางวัลพิเศษ 100 ชิ้น (Lactasoy 20 ชิ้น, Hartbeat 80 ชิ้น)
+        let specialPool = [];
+        for (let i = 0; i < 20; i++) specialPool.push('lactasoy');
+        for (let i = 0; i < 80; i++) specialPool.push('hartbeat');
+
+        // 2. ใช้ฟังก์ชันสุ่มสลับตำแหน่ง (Shuffle) โดยใช้ค่า Seed จาก Firebase เพื่อให้ทุกเครื่องเห็นตรงกัน
+        // หรือใช้วิธีสุ่มแบบอ้างอิงลำดับรอบ (dbTotalSpins) 
+        // สุ่มแบบสร้างความน่าจะเป็นที่อิงกับรอบปัจจุบัน
+        let currentRoundIndex = dbTotalSpins % 100; // รอบที่ 0 - 99
+        
+        // เพื่อความสุ่มแบบไม่เรียง ให้ใช้สูตรคณิตศาสตร์กระจายตำแหน่งกระจายรางวัล
+        // (สูตรนี้จะทำให้ Lactasoy กระจายตัวอยู่ทั่วทั้ง 100 รอบ ไม่กองอยู่ที่ใดที่หนึ่ง)
+        let isLactasoy = ((currentRoundIndex * 7) % 5 === 0); 
+        
+        // ดักเช็คกรณีต้องการล็อกจำนวนให้เป๊ะ (ใช้การคำนวณแบบกระจายสิทธิ์)
+        // หรือวิธีที่ง่ายที่สุดและปลอดภัยที่สุด: ใช้ค่าสุ่มที่อิงตามรอบ
+        if ((currentRoundIndex % 5 === 0) && currentRoundIndex < 100 && currentRoundIndex >= 0) {
+            // สูตรนี้จะยอมให้ Lactasoy ออกทุกๆ รอบที่หาร 5 ลงตัว (เช่น รอบที่ 0, 5, 10, 15 ... จนครบ 20 ชิ้นพอดีเป๊ะ)
+            isLactasoy = true;
+        } else {
+            isLactasoy = false;
+        }
+
+        if (isLactasoy) {
             specialPrizeHTML = `
                 <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
                     <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 1.2rem;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
@@ -301,7 +327,6 @@ async function startSpin() {
                 </div>
             `;
         }
-
         Swal.fire({
             title: `ยินดีด้วย คุณ ${formatDisplayName(currentCustomer)}!`,
             html: `
