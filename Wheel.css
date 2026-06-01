@@ -1,0 +1,415 @@
+        /* รีเซ็ตค่าเริ่มต้น */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, 'Google Sans',"Itim", cursive,'sans-serif';
+            background: #1e293b; /* สีพื้นหลังนอกตู้เกม (สำหรับดูบนจอคอม) */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: auto;
+        }
+
+        /* 📱 บังคับขนาดหน้าจอพรีเซนต์เป็น 1080 x 1980 เป๊ะๆ */
+        /* 📍 จุดที่ 1: ปรับระยะขอบของกล่องใหญ่ภายนอก */
+        .app-container {
+            width: 1080px;
+            height: 1980px;
+            background: linear-gradient(to bottom, #9ee6a2, #b3ee99, #ccf593, #e7fb92, #f8fb9d, #fffbaf);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            
+            /* 🔄 ปรับเปลี่ยนตรงนี้: ลดขอบบนลงเหลือ 60px เพื่อให้หัวข้อวิ่งขึ้นไปชิดด้านบนมากขึ้น */
+            padding: 60px 0 120px 0; /* บน 60px, ซ้าย-ขวา 0, ล่าง 120px */
+            
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 80px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 📍 จุดที่ 2: ลดหรือติดลบระยะกั้นของกล่องหัวข้อ */
+        .header-box {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            
+            /* 🔄 ปรับเปลี่ยนตรงนี้: ใช้ margin-top เป็น 0 หรือติดลบเล็กน้อยเพื่อดึงขึ้นไปอีก */
+            margin-top: 10px; 
+            margin-bottom: 0px; /* ลดระยะห่างด้านล่างไม่ให้ถีบป้ายชื่อหรือวงล้อลงมา */
+        }
+        /* ==========================================================
+           🌟 ตกแต่งพื้นหลัง: ปรับสเกลรุ้งและเมฆให้ใหญ่ขึ้นเข้ากับจอ 1080px
+           ========================================================== */
+        .bg-element {
+            position: absolute;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* สายรุ้งมุมบนขวา */
+        .rainbow-top {
+            top: -150px;
+            right: -150px;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            border: 45px solid #fca5a5;
+            box-shadow: 
+                0 0 0 45px #fde047,
+                0 0 0 90px #93c5fd,
+                0 0 0 135px #c084fc;
+            opacity: 0.5;
+        }
+
+        /* สายรุ้งมุมล่างซ้าย */
+        .rainbow-bottom {
+            bottom: -200px;
+            left: -200px;
+            width: 700px;
+            height: 700px;
+            border-radius: 50%;
+            border: 6px solid #4ade80;
+            box-shadow: 
+                0 0 0 30px #fca5a5,
+                0 0 0 60px #fde047,
+                0 0 0 90px #a7f3d0;
+            opacity: 0.4;
+        }
+
+        /* ==========================================================
+        ☁️ ปรับปรุงก้อนเมฆพาสเทล 3D แบบไล่สีแฟนตาซี (Gradient Clouds)
+        ========================================================== */
+
+        .cloud {
+            position: absolute;
+            border-radius: 100px;
+            opacity: 0.94;
+            /* ปรับฐานเงาและการตัดขอบให้เข้ากับสีเมฆพาสเทล */
+            box-shadow: 
+                0 15px 0px rgba(45, 55, 72, 0.12),
+                0 25px 35px rgba(0, 0, 0, 0.06),
+                inset 0 -10px 20px rgba(255, 255, 255, 0.4); /* เงาสว่างด้านใน */
+            filter: drop-shadow(0px 4px 0px #fff);
+            z-index: 1;
+        }
+
+        /* คงโครงสร้างปุยเมฆชั้นบนไว้ และให้สืบทอด (inherit) สีไล่ระดับจากก้อนแม่ */
+        .cloud::before {
+            content: '';
+            position: absolute;
+            background: inherit;
+            border-radius: 50%;
+            width: 55%;
+            height: 140%;
+            top: -65%;
+            left: 15%;
+        }
+
+        .cloud::after {
+            content: '';
+            position: absolute;
+            background: inherit;
+            border-radius: 50%;
+            width: 45%;
+            height: 115%;
+            top: -45%;
+            right: 15%;
+        }
+
+        /* 🎨 📍 สุ่มจับคู่สีไล่เฉดพาสเทลหวานๆ แยกตามก้อนเมฆแต่ละจุด */
+
+        /* ก้อนที่ 1: ซ้ายบน - ไล่สีชมพู ไป เหลืองครีม (Cotton Candy) */
+        .c1 { 
+            width: 420px; 
+            height: 130px; 
+            top: 6%; 
+            background: linear-gradient(135deg, #ffccd5 0%, #fefae0 100%);
+            animation: moveCloudLeftToRight 35s linear infinite;
+        }
+
+        /* ก้อนที่ 2: ขวาบน - ไล่สีฟ้าพาสเทล ไป ชมพูม่วงอ่อน (Aurora Light) */
+        .c2 { 
+            width: 350px; 
+            height: 110px; 
+            top: 18%; 
+            transform: scaleX(-1); 
+            background: linear-gradient(135deg, #caf0f8 0%, #e8baff 100%);
+            animation: moveCloudRightToLeft 28s linear infinite;
+        }
+
+        /* ก้อนที่ 3: ซ้ายกลางจอ - ไล่สีเขียวมิ้นท์ ไป ฟ้าอ่อน (Fresh Mint) */
+        .c3 {
+            width: 250px;
+            height: 85px;
+            top: 48%;
+            opacity: 0.8;
+            background: linear-gradient(135deg, #e8f5e9 0%, #b3e5fc 100%);
+            animation: moveCloudLeftToRight 22s linear infinite;
+        }
+
+        /* ก้อนที่ 4: ขวาล่างจอ - ไล่สีส้มชานมพาสเทล ไป ชมพูพีช (Sweet Peach) */
+        .c4 { 
+            width: 460px; 
+            height: 140px; 
+            bottom: 8%; 
+            transform: scaleX(-1);
+            background: linear-gradient(135deg, #ffe5d9 0%, #ffcad4 100%);
+            animation: moveCloudRightToLeft 40s linear infinite;
+        }
+
+
+        /* ==========================================================
+        🎬 คำสั่งควบคุมการเลื่อนคงเดิม (วนลูปจากซ้ายไปขวา / ขวาไปซ้าย)
+        ========================================================== */
+        @keyframes moveCloudLeftToRight {
+            0% { left: -500px; }
+            100% { left: 1100px; }
+        }
+
+        @keyframes moveCloudRightToLeft {
+            0% { right: -500px; }
+            100% { right: 1100px; }
+        }
+
+        /* ==========================================================
+           🎯 คอนเทนต์หลัก
+           ========================================================== */
+        /* .header-box {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            margin-top: 5px;
+        } */
+
+        h1 {
+            /* เปลี่ยนมาใช้ฟอนต์ตัวกลมมนน่ารักที่โหลดมา */
+            font-family: 'Itim', cursive;
+            font-size: 74px;          /* ขนาดใหญ่เด่นชัด */
+            font-weight: 700;
+            color: #ff6b6b;           /* สีข้อความหลัก (ส้มอมแดงสดใส) */
+            letter-spacing: 2px;
+            
+            /* 🌟 มนตร์วิเศษสร้างอักษร 3D ด้วยการซ้อนเงาหลายชั้น (Text Shadow Layers) */
+            text-shadow: 
+                /* ชั้นที่ 1-2: สร้างเส้นขอบสีขาวหนาๆ ล้อมรอบตัวอักษรเพื่อตัดขอบ */
+                -3px -3px 0 #fff,  
+                3px -3px 0 #fff,
+                -3px  3px 0 #fff,
+                3px  3px 0 #fff,
+                /* ชั้นที่ 3-8: ค่อยๆ ดันเงาสีเข้มเอียงลงไปทางขวาล่างทีละพิกเซลเพื่อให้ดูหนาเป็นมิติ 3 มิติ */
+                1px  1px 0px #2d3748,
+                2px  2px 0px #2d3748,
+                3px  3px 0px #2d3748,
+                4px  4px 0px #2d3748,
+                5px  5px 0px #2d3748,
+                6px  6px 0px #2d3748,
+                7px  7px 0px #2d3748,
+                8px  8px 0px #2d3748,
+                /* ชั้นสุดท้าย: ใส่เงานุ่มๆ ทอดลงบนพื้นหลัง เพิ่มความสมจริง */
+                12px 12px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* กล่องครอบภายนอกเพื่อล็อกระยะห่าง */
+        .name-container {
+            position: relative;
+            z-index: 10;
+            margin-top: -20px;   /* ขยับขึ้นไปใกล้หัวข้อหลักเล็กน้อย */
+            margin-bottom: 20px; /* เว้นระยะห่างก่อนถึงตัววงล้อ */
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        /* ตัวกล่องป้ายชื่อสไตล์การ์ตูน Pop-Art */
+        .name-box {
+            background: linear-gradient(to bottom, #ffffff, #fff3cd); /* ไล่สีเหลืองครีมอ่อนๆ ด้านใน */
+            border: 5px solid #2d3748; /* เส้นขอบหนาสไตล์ลายเส้นการ์ตูน */
+            border-radius: 30px; /* ขอบมนน่ารัก */
+            padding: 15px 60px; /* เว้นพื้นที่ให้ชื่อข้างในดูไม่อึดอัด */
+            box-shadow: 
+                0 8px 0px #2d3748, /* ทำฐานเงาหนาๆ แบบ 3 มิติสีเดียวกับเส้นขอบ */
+                0 15px 25px rgba(0, 0, 0, 0.15); /* เงานุ่มทอดลงพื้นหลัง */
+            display: inline-block;
+            animation: floating 3s ease-in-out infinite; /* ใส่แอนิเมชันลอยดุ๊กดิ๊ก */
+        }
+
+        /* ตัวอักษรด้านในป้ายชื่อ */
+        .name-box h2 {
+            font-family: 'Itim', cursive; /* ใช้ฟอนต์เดียวกับหัวข้อหลักแต่ปรับขนาดเล็กลง */
+            font-size: 38px; /* ขนาดกำลังสวย ไม่แย่งซีนหัวข้อหลัก */
+            color: #4a5568;
+            font-weight: 500;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* เน้นข้อความชื่อคนเล่นให้เด่นขึ้นไปอีก */
+        .name-box h2 .player-name {
+            color: #ec4899; /* สีชมพูบานเย็นตัดกับป้ายสีครีม */
+            font-weight: 700;
+            margin-left: 10px;
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 🎈 ออนท็อปความน่ารักด้วยแอนิเมชันลอยขึ้น-ลงนุ่มๆ (Floating Effect) */
+        @keyframes floating {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px); /* ลอยขึ้น 10 พิกเซล */
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        /* ขยายขนาดวงล้อเพิ่มขึ้นเป็น 750px เพื่อให้สมส่วนกับความสูง 1980px */
+        .wheel-container {
+            position: relative;
+            z-index: 10;
+            width: 950px;  
+            height: 950px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.18);
+        }
+
+        /* ลูกศรชี้รางวัล (ขยายขนาดขึ้น) */
+        .pointer {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 35px solid transparent;
+            border-right: 35px solid transparent;
+            border-top: 65px solid #ec4899;
+            z-index: 20;
+            filter: drop-shadow(0px 8px 6px rgba(0,0,0,0.15));
+        }
+
+        /* ตัววงล้อ */
+        /* ค้นหาคลาส .wheel อันเดิมของคุณ แล้วเปลี่ยน/เพิ่มเติมตามนี้ครับ */
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 12px solid #2d3748;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
+            background: conic-gradient(
+                #ffb3ba 0deg 60deg,
+                #ffdfba 60deg 120deg,
+                #ffffba 120deg 180deg,
+                #baffc9 180deg 240deg,
+                #bae1ff 240deg 300deg,
+                #e8baff 300deg 360deg
+            );
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.3, 1);
+            position: relative; /* 👈 เพิ่มบรรทัดนี้เพื่อให้กล่องลูกๆ อ้างอิงจุดกึ่งกลาง */
+            overflow: hidden;   /* กันรูปทะลุขอบล้อ */
+        }
+
+        /* 🌟 เพิ่มคลาสใหม่เหล่านี้ลงไปในไฟล์ Wheel.css ของคุณ */
+
+        /* กล่องไอเทมของรางวัลแต่ละช่อง */
+        .wheel-item {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 200px;         /* ความกว้างของพื้นที่วางของรางวัล */
+            height: 50%;          /* ยาวจากจุดศูนย์กลางขึ้นไปถึงขอบบน */
+            margin-left: -100px;  /* ขยับครึ่งหนึ่งของความกว้างเพื่อให้ตรงกลางเป๊ะ */
+            transform-origin: bottom center; /* กำหนดจุดหมุนให้อยู่ที่ศูนย์กลางวงล้อ */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 40px;    /* ระยะห่างของของรางวัลจากขอบวงล้อ */
+            z-index: 2;
+        }
+        /* สไตล์รูปภาพของรางวัลในช่อง */
+        .wheel-item img {
+            width: 180px;          /* ปรับขนาดความกว้างของรูปของรางวัลตามต้องการ */
+            height: 180px;         /* ปรับขนาดความสูงของรูปของรางวัลตามต้องการ */
+            object-fit: contain;
+            filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.1)); /* เพิ่มเงาให้รูปดูมีมิติ */
+        }
+
+        /* ปุ่มกดตรงกลาง START (ขยายขนาดขึ้นเป็น 160px) */
+        .spin-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(to bottom, #ffe066, #f5b041);
+            border-radius: 50%;
+            border: 8px solid #2d3748;
+            color: #2d3748;
+            font-size: 42px; /* ตัวอักษรใหญ่ขึ้น */
+            font-weight: 900;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 12px 0px #b7950b, 0 20px 25px rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+            z-index: 15;
+        }
+
+        .spin-btn:hover {
+            background: linear-gradient(to bottom, #fff099, #f5b041);
+        }
+
+        .spin-btn:active {
+            transform: translate(-50%, -43%) scale(0.95);
+            box-shadow: 0 4px 0px #b7950b, 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .spin-btn:disabled {
+            background: #cbd5e1;
+            box-shadow: 0 6px 0px #94a3b8;
+            border-color: #64748b;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        /* กล่องแสดงผลลัพธ์ (ขยายขนาดใหญ่ขึ้น) */
+        #result {
+            position: relative;
+            z-index: 10;
+            font-size: 38px;
+            font-weight: bold;
+            min-height: 55px;
+            color: #2d3748;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 50px;
+            border-radius: 60px;
+            border: 4px solid #2d3748;
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 900px;
+        }
+
+        /* จัดการฟอนต์และขอบมนให้ป๊อปอัพ SweetAlert2 */
+        .custom-swal-popup {
+            font-family: 'Google Sans', sans-serif;
+            border-radius: 10px;
+            border: 5px solid #2d3748;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+        .custom-swal-title {
+            color: #2d3748;
+            font-size: 34px;
+        }
+  
