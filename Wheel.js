@@ -16,7 +16,7 @@ const db = firebase.database();
 
 const wheel = document.getElementById('wheel');
 const spinBtn = document.getElementById('spinBtn');
-const playerNameSpan = document.querySelector('.player-name');
+const playerNameSpan = document.querySelector('.player-name'); // อ้างอิง element ชื่อผู้เล่น เพื่ออัปเดตทุกครั้งที่หมุนเสร็จ
 
 // 🎁 รายการของรางวัลพร้อมรูปภาพของคุณ
 const prizes = [
@@ -30,9 +30,16 @@ const prizes = [
 
 const numPrizes = prizes.length;
 const degreesPerSlice = 360 / numPrizes; // แต่ละช่องกว้างกี่องศา (6 ช่อง ช่องละ 60 องศา)
-let currentRotation = 0;
+const START_INDEX = 0; // เริ่มต้นให้ลูกศรชี้ไปที่ช่องแรก
+const START_DEGREE = -(degreesPerSlice / 2); // ตำแหน่งตรงกลางช่องแรกที่ชี้ขึ้นบน (-30°)
+let currentRotation = START_DEGREE; // เริ่มจากช่องแรก
 let isSpinning = false;
 let currentQueueData = null;
+
+let dbQueue = [];
+let dbStock = {};
+let dbTotalSpins = 0;
+let lastWonPrizeName = "";
 
 // 🛠️ ฟังก์ชันสร้างรูปภาพยัดลงไปในวงล้อ HTML เดิม (เอาส่วนข้อความออกแล้ว)
 function createWheelItems() {
@@ -59,80 +66,353 @@ function createWheelItems() {
 // เรียกใช้งานฟังก์ชันสร้างไอเทมในวงล้อทันทีเมื่อโหลดสคริปต์
 createWheelItems();
 
-// 🔄 ดึงข้อมูลคิวจาก Firebase Realtime Database
-// บล็อกนี้ใน Wheel.js จะทำหน้าที่เปลี่ยนเครื่องหมาย "-" ให้เป็นชื่อลูกค้าอัตโนมัติ
-db.ref('customerQueue').on('value', (snapshot) => {
-    const queue = snapshot.val();
-    currentQueueData = queue; 
+// ตั้งให้ลูกศรชี้ตรงกลางช่องแรกตอนเริ่มหน้า
+wheel.style.transition = 'none';
+wheel.style.transform = `rotate(${START_DEGREE}deg)`;
+
+// 2. --- ฟังก์ชันล้าง/แปลงชื่อ สำหรับนำไปแสดงผลบนหน้าจอหน้าตู้ ---
+function formatDisplayName(fullName) {
+    if (!fullName) return "ไม่ระบุชื่อ";
     
-    if (queue) {
-        const keys = Object.keys(queue);
-        if (keys.length > 0) {
-            const firstKey = keys[0];
-            const firstPlayer = queue[firstKey];
-            
-            // ดึงชื่อออกมา
-            const nameToShow = (typeof firstPlayer === 'object') ? firstPlayer.name : firstPlayer;
-            
-            // 🎯 เปลี่ยนข้อความในแผ่นป้ายจาก "-" เป็นชื่อลูกค้าที่ดึงมาได้
-            playerNameSpan.innerText = nameToShow; 
-            spinBtn.disabled = false; 
-            return;
-        }
+    // ตัดเอาเฉพาะชื่อจริงท่อนแรกก่อนช่องว่าง
+    let firstName = fullName.trim().split(' ')[0];          
+   
+    // 🎯 จำกัด 10 ตัวอักษร ถ้าชื่อยาวเกินให้หั่นเหลือ 10 แล้วเติม xxxxxx
+    if (firstName.length > 10) {
+        firstName = firstName.substring(0, 10) + "xxxxxx";
     }
     
-    // ถ้าใน Firebase ไม่มีคิวเหลืออยู่เลย
-    playerNameSpan.innerText = "-";
-    spinBtn.disabled = true; 
-});
+    return firstName;
+}
+
+// 3. --- ฟังก์ชันอัปเดต UI รายชื่อคิวลูกค้าด้านล่าง ---
+function updatePlayerInterface() {
+    if (!spinBtn) return;
+    const display = document.getElementById('current-player-display');
+    const nameSpan = playerNameSpan;
+
+    const uniqueQueue = [...new Set(dbQueue)];
+
+    if (uniqueQueue && uniqueQueue.length > 0) {
+        if (display) display.style.display = 'block';
+        
+        const formattedName = formatDisplayName(uniqueQueue[0]);
+        if (nameSpan) nameSpan.textContent = formattedName;
+        
+        // 🎯 เช็คให้ชัวร์ว่าถ้าวงล้อไม่ได้กำลังหมุนอยู่ ต้องปล่อยให้ปุ่ม disabled เป็น false เสมอ
+        spinBtn.disabled = isSpinning; 
+    } else {
+        if (display) display.style.display = 'none';
+        if (nameSpan) nameSpan.textContent = '';
+        spinBtn.disabled = true;
+    }
+}
+
+// 4. ฟังก์ชันบันทึกข้อมูลไป Firebase
+function saveResultToFirebase(customerName, prizeName) {
+    // A. บันทึกประวัติผู้ชนะ
+    db.ref('prizeHistory').push({
+        customer: customerName,
+        prize: prizeName,
+        time: new Date().toLocaleString('th-TH'),
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // B. หักสต็อกสินค้าที่ได้รางวัล (ใช้ Transaction เพื่อความแม่นยำ)
+    db.ref('currentStock/' + prizeName).transaction((current) => {
+        return (current || 0) - 1;
+    });
+
+    // C. เพิ่มจำนวนรอบรวม
+    db.ref('totalSpins').transaction((count) => {
+        return (count || 0) + 1;
+    });
+}
 
 
-// 🎡 ระบบสุ่มคำนวณและหมุนวงล้อ
-spinBtn.addEventListener('click', () => {
+// 5. ฟังก์ชันหลักในการหมุน
+// 5. ฟังก์ชันหลักในการหมุน (ปรับปรุงระบบคำนวณองศา ล็อกเป้าตรงช่อง 100%)
+async function startSpin() {
     if (isSpinning) return;
-    isSpinning = true;
-    spinBtn.disabled = true;
 
-    const randomDegree = Math.floor(Math.random() * 360);
-    const totalRotation = currentRotation + (360 * 5) + randomDegree;
-    currentRotation = totalRotation;
-
-    wheel.style.transform = `rotate(${totalRotation}deg)`;
-
-    setTimeout(() => {
-        const actualDegree = (360 - (totalRotation % 360)) % 360;
-        const prizeIndex = Math.floor(actualDegree / degreesPerSlice) % numPrizes;
-        const winningPrize = prizes[prizeIndex];
-
-        // 🌟 3. เรียกใช้งาน SweetAlert2 โชว์รูปภาพและชื่อของรางวัลสุดปัง
+    // 1. --- ตรวจสอบคิวลูกค้า ---
+    if (dbQueue.length === 0) {
         Swal.fire({
-            title: 'ยินดีด้วยด้วยค่ะ! 🎉',
-            html: `<b style="font-size: 28px; color: #ec4899;">คุณได้รับ: ${winningPrize.name}</b>`,
-            imageUrl: winningPrize.image, // เอารูปของรางวัลมาโชว์ในป๊อปอัพด้วย
-            imageWidth: 180,
-            imageHeight: 180,
-            imageAlt: winningPrize.name,
-            confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#2d3748', // สีปุ่มสไตล์เส้นขอบการ์ตูน
+            title: 'คิวว่าง',
+            text: 'กรุณาเพิ่มชื่อลูกค้าในหน้า Admin',
+            icon: 'info',
             customClass: {
                 popup: 'custom-swal-popup',
                 title: 'custom-swal-title'
             }
         });
+        return;
+    }
 
-        isSpinning = false;
-        spinBtn.disabled = false;
-    }, 4000); 
+    // 2. --- ตรวจสอบโควตา 100 ครั้ง และทำการสลับรอบอัตโนมัติ ---
+    if (dbTotalSpins >= 100) {
+        const snapshot = await db.ref().once('value');
+        const data = snapshot.val();
+        const nextQueue = data.nextRoundQueue;
+
+        const isNextReady = nextQueue && Object.values(nextQueue).reduce((a, b) => a + (parseInt(b) || 0), 0) === 100;
+
+        if (isNextReady) {
+            Swal.fire({
+                title: 'กำลังอัพเดทข้อมูล',
+                text: 'ระบบกำลังดึงข้อมูลกรุณารอสักครู่',
+                icon: 'info',
+                showConfirmButton: false,
+                timer: 2000
+            }).then(async () => {
+                await db.ref().update({
+                    'currentStock': nextQueue,      
+                    'prizeStock': nextQueue,        
+                    'totalSpins': 0,                
+                    'nextRoundQueue': {}            
+                });
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                title: 'ครบโควตา 100 รอบ',
+                text: 'กรุณาตั้งค่าของรางวัลรอบถัดไปที่หน้า Admin ก่อนเริ่มต่อ',
+                icon: 'warning',
+                customClass: {
+                    popup: 'custom-swal-popup',
+                    title: 'custom-swal-title'
+                }
+            });
+        }
+        return; 
+    }
+
+    // --- เริ่มกระบวนการหมุนปกติ (ถ้ายังไม่ครบ 100) ---
+    const currentCustomer = dbQueue[0];
+
+    // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
+    let availablePrizes = [];
+    prizes.forEach((prize, index) => {
+        let count = dbStock[prize.name] || 0;
+        for (let i = 0; i < count; i++) { availablePrizes.push(index); }
+    });
+
+    if (availablePrizes.length === 0) {
+        Swal.fire({
+            title: 'ของหมด',
+            text: 'ของรางวัลในสต็อกหมดแล้ว',
+            icon: 'warning',
+            customClass: {
+                popup: 'custom-swal-popup',
+                title: 'custom-swal-title'
+            }
+        });
+        return;
+    }
+
+    let targetIdx = -1;
+    let winPrize = null;
+    let attempts = 0; 
+
+    while (attempts < 10) {
+        const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+        targetIdx = availablePrizes[randomIndex];
+        winPrize = prizes[targetIdx];
+
+        const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
+        
+        if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
+            break;
+        }
+        attempts++;
+    }
+
+    lastWonPrizeName = winPrize.name; 
+
+    // --- เริ่มสถานะหมุน ---
+    isSpinning = true;
+    spinBtn.disabled = true;
+
+    // เล่นเสียง
+    const spinAudio = document.getElementById('spin-audio');
+    if (spinAudio) {
+        spinAudio.currentTime = 0;
+        spinAudio.play().catch(e => console.log("Audio failed:", e));
+    }
+
+    // --- บันทึกข้อมูลลง Firebase ทันทีที่รู้ผล ---
+    saveResultToFirebase(currentCustomer, winPrize.name);
+
+    // ========================================================================
+    // 🎯 🚩 [จุดแก้ไขสำคัญ: ปรับปรุงตรรกะการหมุนไปทางซ้ายให้ลงล็อกช่องรางวัลเป๊ะๆ]
+    // ========================================================================
+    
+    // 1. คำนวณหาตำแหน่งองศาตรงกลางของช่องรางวัลเป้าหมาย
+    //    ใช้มุมลบเพราะวงล้อหมุนไปทางซ้ายและลูกศรชี้ขึ้นบน
+    const targetDegree = -(targetIdx * degreesPerSlice + (degreesPerSlice / 2));
+    
+    // 2. คำนวณหาจุดหยุดสุดท้าย (หมุนซ้าย 5 รอบเต็มแล้วเข้าหาตำแหน่งรางวัล)
+    const baseRounds = 360 * 5;
+    const currentModulo = ((currentRotation % 360) + 360) % 360;
+    let distanceToTarget = (currentModulo - targetDegree + 360) % 360;
+    if (distanceToTarget === 0) {
+        distanceToTarget = 360;
+    }
+
+    const finalRotation = currentRotation - baseRounds - distanceToTarget;
+    currentRotation = finalRotation; // บันทึกค่าตำแหน่งสะสมไว้ใช้ในตาถัดไป
+
+    // 3. ใช้พลังของ CSS Transition ในการคุมสปีด (รวมทั้งหมุนแล้วหยุดใน 6 วินาที)
+    wheel.style.transition = 'transform 6000ms cubic-bezier(0.25, 0.1, 0.1, 1)';
+    wheel.style.transform = `rotate(${finalRotation}deg)`;
+
+    // --- แสดงผลเมื่อหยุดหมุน (หลังจากเวลาผ่านไป 6 วินาทีเสร็จสิ้นพอดี) ---
+    setTimeout(() => {
+        if (spinAudio) spinAudio.pause();
+        const winAudio = document.getElementById('win-audio');
+        if (winAudio) {
+            winAudio.currentTime = 0;
+            winAudio.play().catch(e => console.log("Win audio failed:", e));
+        }
+
+        // --- ตรรกะควบคุมโควตารางวัลพิเศษ ---
+        let specialPrizeHTML = '';
+        let currentRoundIndex = dbTotalSpins % 100; 
+        let isLactasoy = (currentRoundIndex % 5 === 0) && currentRoundIndex < 100 && currentRoundIndex >= 0;
+
+        if (isLactasoy) {
+            specialPrizeHTML = `
+                <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
+                    <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 34px;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
+                    <img src="lactasoy.png" style="width:300px; height:300px; object-fit:contain;">
+                </div>
+            `;
+        } else {
+            specialPrizeHTML = `
+                <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
+                    <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 34px;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
+                    <img src="hartbeat.png" style="width:300px; height:300px; object-fit:contain;">
+                </div>
+            `;
+        }
+
+        // ลบคิวคนแรกออกทันทีหลังการหมุนเสร็จ เพื่อให้ชื่อใหม่อัปเดตทันที
+        if (dbQueue && dbQueue.length > 0) {
+            const updatedQueue = [...dbQueue];
+            updatedQueue.shift();
+            dbQueue = updatedQueue;
+            db.ref('customerQueue').set(updatedQueue);
+        }
+
+        updatePlayerInterface();
+
+        // แสดงกล่องแจ้งเตือน SweetAlert2 สไตล์ตู้เกม
+        Swal.fire({
+            title: `ยินดีด้วย คุณ ${formatDisplayName(currentCustomer)}!`,
+            html: `
+                <b style="font-size: 34px;">ได้รับ:</b> <b style="color:#e74c3c; font-size: 34px;">${winPrize.name}</b>
+                <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
+                    <img src="${winPrize.image}" style="width:300px; height:300px; object-fit:contain;">
+                </div>
+                ${specialPrizeHTML}
+            `,
+            icon: 'success',
+            confirmButtonText: 'ตกลง',
+            allowOutsideClick: false,
+            timer: 15000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'custom-swal-popup',
+                title: 'custom-swal-title'
+            }
+        }).then(() => {
+            isSpinning = false;
+            
+            if (spinBtn) {
+                spinBtn.disabled = false; 
+            }
+        });
+    }, 6000); // ดีเลย์รับผลรวม 6 วินาที
+}
+
+// 6. --- รวม Firebase Listener ไว้จุดเดียวแบบ Single Source of Truth ป้องกันลูปค้าง ---
+db.ref().on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    const queueData = data.customerQueue || {};
+
+    // แปลงโครงสร้างข้อมูลคิวจาก Firebase
+    let rawQueue = [];
+    if (typeof queueData === 'object' && !Array.isArray(queueData)) {
+        rawQueue = Object.keys(queueData).map(key => {
+            const item = queueData[key];
+            return (typeof item === 'object' && item !== null && item.name) ? item.name : item;
+        });
+    } else {
+        rawQueue = Array.isArray(queueData) ? queueData : [];
+    }
+
+    // 🎯 ตรรกะตรวจจับชื่อจริงซ้ำเฉพาะกิจ (ทำความสะอาดข้อมูลก่อนกระจายลงแอป)
+    if (rawQueue && rawQueue.length > 0) {
+        const seenFirstNames = new Set();
+        const cleanedQueue = [];
+        let hasDuplicate = false;
+
+        rawQueue.forEach(fullName => {
+            if (!fullName || typeof fullName !== 'string') return;
+            const firstName = fullName.trim().split(' ')[0];
+
+            if (!seenFirstNames.has(firstName)) {
+                seenFirstNames.add(firstName);
+                cleanedQueue.push(fullName); 
+            } else {
+                hasDuplicate = true; // ตรวจเจอตัวซ้ำ
+            }
+        });
+
+        // หากข้อมูลไม่นิ่ง สั่งปรับ Firebase ให้คลีนทันที
+        if (hasDuplicate) {
+            console.log("⚠️ ตรวจพบชื่อจริงซ้ำในระบบ! กำลังทำการล้างคิวอัตโนมัติ...");
+            db.ref('customerQueue').set(cleanedQueue);
+            return; // เด้งออกเพื่อรอรับ Snap รอบที่คลีนเสร็จแล้ว
+        }
+    }
+
+    // บันทึกสถานะลง Global Variables หลังกรองเสร็จสิ้น
+    dbQueue = rawQueue;
+    dbStock = data.currentStock || {};
+    dbTotalSpins = data.totalSpins || 0;
+
+    // อัปเดต UI หน้าจอทั้งหมดให้เสร็จสรรพ
+    updatePlayerInterface();
 });
 
-// ⌨️ เพิ่มระบบดักจับการกดปุ่มบนคีย์บอร์ด
-window.addEventListener('keydown', (event) => {
-    // เช็กว่าปุ่มที่กดคือปุ่ม "Enter" หรือไม่
-    if (event.key === 'Enter') {
-        // เช็กเพิ่มเติมว่าปุ่มสปินไม่ได้ถูกสั่งปิดการใช้งานอยู่ (ป้องกันการกด Enter ซ้ำรัวๆ ตอนล้อกำลังหมุน)
-        if (!spinBtn.disabled) {
-            // สั่งให้ระบบทำงานเหมือนกับการคลิกปุ่ม START ทันที
-            spinBtn.click();
+// 7. Events
+spinBtn.addEventListener('click', startSpin);
+
+// --- การรองรับคีย์บอร์ด ---
+window.addEventListener('keydown', function(e) {
+    const isEnter = (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter');
+    const isSpace = (e.code === 'Space');
+    const isNumberKey = (e.key >= '0' && e.key <= '9');
+    const specialKeys = ['.', '+', '-', '*', '/'];
+    const isSpecialKey = specialKeys.includes(e.key);
+
+    if (isEnter || isSpace || isNumberKey || isSpecialKey) {
+        const swalConfirmBtn = Swal.getConfirmButton();
+        if (Swal.isVisible() && swalConfirmBtn) {
+            e.preventDefault();
+            swalConfirmBtn.click(); 
+            return; 
+        }
+
+        if (!isSpinning && spinBtn && !spinBtn.disabled) {
+            e.preventDefault(); 
+            spinBtn.classList.add('pulling');
+            
+            setTimeout(() => {
+                spinBtn.classList.remove('pulling');
+                startSpin(); 
+            }, 200);
         }
     }
 });

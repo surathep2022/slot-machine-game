@@ -3,7 +3,14 @@
  */
 
 // 1. --- Configuration & Global Variables ---
-const prizeNames = ["หมอนรองคอ","กระบอกน้ำ","ชุดถนอมอาหาร","แก้วน้ำปาร์ตี้","แก้วชงชากาแฟ","ถุงผ้าเก็บของ"];
+const prizes = [
+    { name: "หมอนรองคอ", image: "2.png" },   
+    { name: "กระบอกน้ำ", image: "4.png" },    
+    { name: "ชุดถนอมอาหาร", image: "5.png" },       
+    { name: "แก้วน้ำปาร์ตี้", image: "8.png" }, 
+    { name: "แก้วชงชากาแฟ", image: "10.png" },
+    { name: "ถุงผ้าเก็บของ", image: "11.png" }
+];
 
 let currentPage = 1;
 const rowsPerPage = 10;
@@ -26,20 +33,20 @@ function initConfigUI(currentStock, nextQueue) {
     if (!currentGrid || !nextGrid) return;
 
     // 🔵 วาด Grid ฝั่งรอบปัจจุบัน (Lock เมื่อมีการเล่น)
-    currentGrid.innerHTML = prizeNames.map(name => `
+    currentGrid.innerHTML = prizes.map(prize => `
         <div class="prize-input-group">
-            <label>${name}</label>
-            <input type="number" class="stock-input current-input" data-name="${name}" 
-                   value="${currentStock[name] || 0}" oninput="calculateTotal('current')">
+            <label>${prize.name}</label>
+            <input type="number" class="stock-input current-input" data-name="${prize.name}" 
+                   value="${currentStock[prize.name] || 0}" oninput="calculateTotal('current')">
         </div>
     `).join('');
 
     // 🟠 วาด Grid ฝั่งรอบถัดไป (แก้ไขได้อิสระ)
-    nextGrid.innerHTML = prizeNames.map(name => `
+    nextGrid.innerHTML = prizes.map(prize => `
         <div class="prize-input-group">
-            <label>${name}</label>
-            <input type="number" class="stock-input next-input" data-name="${name}" 
-                   value="${nextQueue[name] || 0}" oninput="calculateTotal('next')">
+            <label>${prize.name}</label>
+            <input type="number" class="stock-input next-input" data-name="${prize.name}" 
+                   value="${nextQueue[prize.name] || 0}" oninput="calculateTotal('next')">
         </div>
     `).join('');
 
@@ -149,10 +156,10 @@ function updateDashboard() {
     const invGrid = document.getElementById('inventory-grid');
     if (invGrid) {
         invGrid.innerHTML = '';
-        prizeNames.forEach(name => {
-            const count = dbStock[name] || 0;
+        prizes.forEach(prize => {
+            const count = dbStock[prize.name] || 0;
             totalLeft += count;
-            invGrid.innerHTML += `<div class="inventory-card"><span>${name}</span><b>${count}</b></div>`;
+            invGrid.innerHTML += `<div class="inventory-card"><span>${prize.name}</span><b>${count}</b></div>`;
         });
     }
     document.getElementById('total-left-display').textContent = totalLeft;
@@ -182,12 +189,12 @@ function updateStatusTags(nextQueue) {
     let totalInQueue = 0;
     
     // 2. วาดข้อมูลลงในตารางสรุป (แสดงข้อมูลปกติเสมอ)
-    summaryBody.innerHTML = prizeNames.map(name => {
-        const count = parseInt(nextQueue[name]) || 0;
+    summaryBody.innerHTML = prizes.map(prize => {
+        const count = parseInt(nextQueue[prize.name]) || 0;
         totalInQueue += count;
         return `
             <tr>
-                <td>${name}</td>
+                <td>${prize.name}</td>
                 <td style="text-align: right;"><b>${count}</b> ชิ้น</td>
             </tr>
         `;
