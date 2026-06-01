@@ -10,16 +10,13 @@ const fakeItemsCount = 60;
 const slotContainer = document.getElementById('slot-container');
 const btn = document.getElementById('spin-btn');
 
-const prizes = [   
-    { name: "ผ้ากันเปื้อน", image: "1.png" },
-    { name: "หมอนรองคอ", image: "2.png" },
-    { name: "กระเป๋าช้อปปิ้ง", image: "3.png" }, 
+const prizes = [       
+    { name: "หมอนรองคอ", image: "2.png" },   
     { name: "กระบอกน้ำ", image: "4.png" },    
-    { name: "ชุดถนอมอาหาร", image: "5.png" },    
-    { name: "กระบอกแก้ว", image: "6.png" },
-    { name: "กล่องผ้าเก็บของ", image: "7.png" },    
-    { name: "แก้วน้ำปาร์ตี้", image: "8.png" },
-    { name: "แก้วเก็บความเย็น", image: "9.png" }
+    { name: "ชุดถนอมอาหาร", image: "5.png" },       
+    { name: "แก้วน้ำปาร์ตี้", image: "8.png" }, 
+    { name: "แก้วชงชากาแฟ", image: "10.png" },
+    { name: "ถุงผ้าเก็บของ", image: "11.png" },    
 ];
 
 // --- ตัวแปรสำหรับเก็บข้อมูลจาก Firebase (Global State) ---  
@@ -31,12 +28,12 @@ let lastWonPrizeName = "";
 // ฟังก์ชันสร้าง Pattern 6 ช่อง (5 สินค้า + 1 READY ที่ตำแหน่ง index 2)
 function getBasePattern() {
     return [
-        prizes[8], 
+        prizes[0], 
         prizes[1], 
         { name: "READY", isReady: true }, // ช่องที่ 3 (Index 2)
         prizes[2], 
         prizes[3], 
-        prizes[7]
+        prizes[4]
     ];
 }
 

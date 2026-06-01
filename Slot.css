@@ -11,14 +11,14 @@
             position: relative;
 
            
-             background-image: linear-gradient(
+            background-image: linear-gradient(
                 to bottom right,
-                #91defe,
-                #99c0f9,
-                #bdb6ec,
-                #d7b3e3,
-                #efb3d5,
-                #f9bccc
+                #9ee6a2,
+                #b3ee99,
+                #ccf593,
+                #e7fb92,
+                #f8fb9d,
+                #fffbaf
             );
             background-size: cover;
             color: white;
