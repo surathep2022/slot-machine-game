@@ -164,6 +164,14 @@ function updateDashboard() {
     }
     document.getElementById('total-left-display').textContent = totalLeft;
 
+    // อัปเดตจำนวนคงเหลือของผู้สนับสนุน (โบนัสพิเศษ Hartbeat 70 / Lactasoy 30)
+    const stockHartbeat = document.getElementById('stock-hartbeat');
+    const stockLactasoy = document.getElementById('stock-lactasoy');
+    const lactasoyGiven = Math.min(30, Math.floor((dbTotalSpins + 4) / 5));
+    const hartbeatGiven = Math.min(70, Math.max(0, dbTotalSpins - lactasoyGiven));
+    if (stockHartbeat) stockHartbeat.textContent = 70 - hartbeatGiven;
+    if (stockLactasoy) stockLactasoy.textContent = 30 - lactasoyGiven;
+
     // อัปเดตคิวลูกค้า
     const queueDiv = document.getElementById('current-queue-list');
     if (queueDiv) {
