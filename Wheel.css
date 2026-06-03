@@ -20,11 +20,11 @@
         .app-container {
             width: 1080px;
             height: 1980px;
-            background: linear-gradient(to bottom, #9ee6a2, #b3ee99, #ccf593, #e7fb92, #f8fb9d, #fffbaf);
+            background: url('background.png') center center / cover no-repeat;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             
             /* 🔄 ปรับเปลี่ยนตรงนี้: ลดขอบบนลงเหลือ 60px เพื่อให้หัวข้อวิ่งขึ้นไปชิดด้านบนมากขึ้น */
             padding: 60px 0 120px 0; /* บน 60px, ซ้าย-ขวา 0, ล่าง 120px */
@@ -36,13 +36,15 @@
 
         /* 📍 จุดที่ 2: ลดหรือติดลบระยะกั้นของกล่องหัวข้อ */
         .header-box {
-            position: relative;
-            z-index: 10;
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            z-index: 15;
             text-align: center;
             
-            /* 🔄 ปรับเปลี่ยนตรงนี้: ใช้ margin-top เป็น 0 หรือติดลบเล็กน้อยเพื่อดึงขึ้นไปอีก */
-            margin-top: 10px; 
-            margin-bottom: 0px; /* ลดระยะห่างด้านล่างไม่ให้ถีบป้ายชื่อหรือวงล้อลงมา */
+            margin-top: 0;
+            margin-bottom: 0; /* ลดระยะห่างด้านล่างไม่ให้ถีบป้ายชื่อหรือวงล้อลงมา */
         }
         /* ==========================================================
            🌟 ตกแต่งพื้นหลัง: ปรับสเกลรุ้งและเมฆให้ใหญ่ขึ้นเข้ากับจอ 1080px
@@ -220,12 +222,11 @@
         .name-container {
             position: relative;
             z-index: 10;
-            margin-top: -20px;   /* ขยับขึ้นไปใกล้หัวข้อหลักเล็กน้อย */
-            margin-bottom: 20px; /* เว้นระยะห่างก่อนถึงตัววงล้อ */
+            margin-top: -200px;   /* ขยับขึ้นไปใกล้หัวข้อหลักมากขึ้น */
+            margin-bottom: 60px; /* เว้นระยะห่างก่อนถึงตัววงล้อ */
             display: flex;
             justify-content: center;
             width: 100%;
-            margin-top: 30px;
         }
 
         /* ตัวกล่องป้ายชื่อสไตล์การ์ตูน Pop-Art */
@@ -278,10 +279,12 @@
             z-index: 10;
             width: 950px;  
             height: 950px;
+            margin-top: -40px;
             padding: 20px;
             background: #fff;
             border-radius: 50%;
             box-shadow: 0 30px 70px rgba(0, 0, 0, 0.18);
+                
         }
 
         /* ลูกศรชี้รางวัล (ขยายขนาดขึ้น) */
@@ -305,15 +308,21 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 12px solid #2d3748;
+            /* border: 12px solid #2d3748; */
             box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
             background: conic-gradient(
-                #ffb3ba 0deg 60deg,
-                #ffdfba 60deg 120deg,
-                #ffffba 120deg 180deg,
-                #baffc9 180deg 240deg,
-                #bae1ff 240deg 300deg,
-                #e8baff 300deg 360deg
+                #ad0000 0deg ,
+                #ff0000 60deg,
+                #ff3700 60deg ,
+                #ffc400 120deg,
+                #d3b900 120deg, 
+                #ffff00 180deg,
+                #00cc1d 180deg,
+                #7dff5f 240deg,
+                #007aff 240deg, 
+                #78b7fa 300deg,
+                #ed00ed 300deg,
+                #ff89ff 360deg
             );
             transition: transform 4s cubic-bezier(0.1, 0.8, 0.3, 1);
             position: relative; /* 👈 เพิ่มบรรทัดนี้เพื่อให้กล่องลูกๆ อ้างอิงจุดกึ่งกลาง */

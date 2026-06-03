@@ -139,7 +139,7 @@ async function startSpin() {
     if (dbQueue.length === 0) {
         Swal.fire({
             title: 'คิวว่าง',
-            text: 'กรุณาเพิ่มชื่อลูกค้าในหน้า Admin',
+            text: 'กรุณาแจ้ง SMS กับเจ้าหน้าที่ก่อนเริ่มหมุน',
             icon: 'info',
             customClass: {
                 popup: 'custom-swal-popup',
