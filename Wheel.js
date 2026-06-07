@@ -25,7 +25,14 @@ const prizes = [
     { name: "ชุดถนอมอาหาร", image: "5.png" },       
     { name: "แก้วน้ำปาร์ตี้", image: "8.png" }, 
     { name: "แก้วชงชากาแฟ", image: "10.png" },
-    { name: "ถุงผ้าเก็บของ", image: "11.png" }
+    { name: "ถุงผ้าเก็บของ", image: "11.png" },
+    { name: "หมอนรองคอ", image: "2.png" },   
+    { name: "กระบอกน้ำ", image: "4.png" },    
+    { name: "ชุดถนอมอาหาร", image: "5.png" },       
+    { name: "แก้วน้ำปาร์ตี้", image: "8.png" }, 
+    { name: "แก้วชงชากาแฟ", image: "10.png" },
+    { name: "ถุงผ้าเก็บของ", image: "11.png" },
+  
 ];
 
 const numPrizes = prizes.length;
@@ -263,7 +270,7 @@ async function startSpin() {
     currentRotation = finalRotation; // บันทึกค่าตำแหน่งสะสมไว้ใช้ในตาถัดไป
 
     // 3. ใช้พลังของ CSS Transition ในการคุมสปีด (รวมทั้งหมุนแล้วหยุดใน 6 วินาที)
-    wheel.style.transition = 'transform 6000ms cubic-bezier(0.25, 0.1, 0.1, 1)';
+    wheel.style.transition = 'transform 7000ms cubic-bezier(0.25, 0.1, 0.1, 1)';
     wheel.style.transform = `rotate(${finalRotation}deg)`;
 
     // --- แสดงผลเมื่อหยุดหมุน (หลังจากเวลาผ่านไป 6 วินาทีเสร็จสิ้นพอดี) ---
@@ -332,7 +339,7 @@ async function startSpin() {
                 spinBtn.disabled = false; 
             }
         });
-    }, 6000); // ดีเลย์รับผลรวม 6 วินาที
+    }, 7000); // ดีเลย์รับผลรวม 7 วินาที
 }
 
 // 6. --- รวม Firebase Listener ไว้จุดเดียวแบบ Single Source of Truth ป้องกันลูปค้าง ---

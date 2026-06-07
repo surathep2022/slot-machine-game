@@ -312,17 +312,40 @@
             box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
             background: conic-gradient(
                 #ad0000 0deg ,
-                #ff0000 60deg,
-                #ff3700 60deg ,
-                #ffc400 120deg,
-                #d3b900 120deg, 
-                #ffff00 180deg,
-                #00cc1d 180deg,
-                #7dff5f 240deg,
-                #007aff 240deg, 
-                #78b7fa 300deg,
-                #ed00ed 300deg,
-                #ff89ff 360deg
+                #ff0000 30deg,
+
+                #e65100 30deg,
+                #ff9100 60deg,               
+
+                #d3b900 60deg,
+                #ffea00 90deg,
+
+                #00aa18 90deg,
+                #00e676 120deg,
+
+                #00bfa5 120deg,
+                #1de9b6 150deg, 
+
+                #00b0ff 150deg,
+                #80d8ff 180deg,
+
+                #007aff 180deg,
+                #448aff 210deg, 
+
+                #6a1b9a 210deg,
+                #e040fb 240deg,
+
+                #c2185b 240deg,
+                #ff4081 270deg,
+
+                #ff6e40 270deg,
+                #ff9e80 300deg,
+
+                #8d6e63 300deg,
+                #bcaaa4 330deg,
+
+                #78909c 330deg,
+                #cfd8dc 360deg
             );
             transition: transform 4s cubic-bezier(0.1, 0.8, 0.3, 1);
             position: relative; /* 👈 เพิ่มบรรทัดนี้เพื่อให้กล่องลูกๆ อ้างอิงจุดกึ่งกลาง */
@@ -349,8 +372,8 @@
         }
         /* สไตล์รูปภาพของรางวัลในช่อง */
         .wheel-item img {
-            width: 180px;          /* ปรับขนาดความกว้างของรูปของรางวัลตามต้องการ */
-            height: 180px;         /* ปรับขนาดความสูงของรูปของรางวัลตามต้องการ */
+            width: 120px;          /* ปรับขนาดความกว้างของรูปของรางวัลตามต้องการ */
+            height: 120px;         /* ปรับขนาดความสูงของรูปของรางวัลตามต้องการ */
             object-fit: contain;
             filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.1)); /* เพิ่มเงาให้รูปดูมีมิติ */
         }
