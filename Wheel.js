@@ -194,15 +194,48 @@ async function startSpin() {
         return; 
     }
 
-    // --- เริ่มกระบวนการหมุนปกติ (ถ้ายังไม่ครบ 100) ---
+    // --- เริ่มกระบวนการสุ่มปกติ ---
     const currentCustomer = dbQueue[0];
+
+    // คำนวณหา "ครั้งที่หมุนในปัจจุบัน" (คนที่เท่าไหร่ในรอบ 1-100)
+    // dbTotalSpins เริ่มจาก 0 ดังนั้น ครั้งที่ 1 คือ 0 (เลขคู่ในคอมแต่เป็นครั้งแรกของมนุษย์)
+    // เพื่อให้ตรงกับเงื่อนไขมนุษย์: ครั้งที่ 1 (คี่), ครั้งที่ 2 (คู่) เราจะ +1 เข้าไปก่อนเช็ก
+    const currentTurnNumber = dbTotalSpins + 1; 
+    const isEvenTurn = (currentTurnNumber % 2 === 0); // เช็กว่าเป็นครั้งที่หมุนเลขคู่หรือไม่
+
+    // ตรวจสอบสต็อกของแก้วน้ำปาร์ตี้ ณ ปัจจุบัน
+    const partyCupStock = dbStock["แก้วน้ำปาร์ตี้"] || 0;
 
     // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
     let availablePrizes = [];
     prizes.forEach((prize, index) => {
         let count = dbStock[prize.name] || 0;
-        for (let i = 0; i < count; i++) { availablePrizes.push(index); }
+        
+        // 🎯 🚩 [กรองเงื่อนไขสลับ ครั้งคี่-ครั้งคู่ อัตโนมัติ]
+        if (partyCupStock > 40) {
+            if (!isEvenTurn && prize.name === "แก้วน้ำปาร์ตี้") {
+                // ❌ ครั้งที่หมุนเป็นเลขคี่ (1,3,5...) -> ห้ามเอาแก้วน้ำปาร์ตี้ใส่ในตู้สุ่ม
+                return; 
+            }
+            if (isEvenTurn && prize.name !== "แก้วน้ำปาร์ตี้") {
+                // ❌ ครั้งที่หมุนเป็นเลขคู่ (2,4,6...) -> บังคับเอาเฉพาะแก้วน้ำปาร์ตี้เท่านั้น (อย่างอื่นห้ามเข้า)
+                return;
+            }
+        }
+
+        // ใส่ของรางวัลที่ผ่านเกณฑ์เข้าสู่กล่องสุ่มตามจำนวนสต็อก
+        for (let i = 0; i < count; i++) { 
+            availablePrizes.push(index); 
+        }
     });
+
+    // เซฟตี้: หากเกิดกรณีที่ครั้งเลขคู่ แต่แก้วน้ำปาร์ตี้หมดสต็อกกะทันหัน ให้ดึงของรางวัลทั้งหมดกลับมาสุ่มแก้ขัด
+    if (availablePrizes.length === 0) {
+        prizes.forEach((prize, index) => {
+            let count = dbStock[prize.name] || 0;
+            for (let i = 0; i < count; i++) { availablePrizes.push(index); }
+        });
+    }
 
     if (availablePrizes.length === 0) {
         Swal.fire({
@@ -217,6 +250,7 @@ async function startSpin() {
         return;
     }
 
+    // 🎯 🚩 [ตรรกะสุ่มเดิม ทำหน้าที่เลือกชิ้นจากรายการที่กรองแล้ว]
     let targetIdx = -1;
     let winPrize = null;
     let attempts = 0; 
@@ -269,7 +303,7 @@ async function startSpin() {
     const finalRotation = currentRotation - baseRounds - distanceToTarget;
     currentRotation = finalRotation; // บันทึกค่าตำแหน่งสะสมไว้ใช้ในตาถัดไป
 
-    // 3. ใช้พลังของ CSS Transition ในการคุมสปีด (รวมทั้งหมุนแล้วหยุดใน 6 วินาที)
+    // 3. ใช้พลังของ CSS Transition ในการคุมสปีด (รวมทั้งหมุนแล้วหยุดใน 7 วินาที)
     wheel.style.transition = 'transform 7000ms cubic-bezier(0.25, 0.1, 0.1, 1)';
     wheel.style.transform = `rotate(${finalRotation}deg)`;
 
@@ -339,7 +373,7 @@ async function startSpin() {
                 spinBtn.disabled = false; 
             }
         });
-    }, 7000); // ดีเลย์รับผลรวม 7 วินาที
+    }, 8000); // ดีเลย์รับผลรวม 7 วินาที
 }
 
 // 6. --- รวม Firebase Listener ไว้จุดเดียวแบบ Single Source of Truth ป้องกันลูปค้าง ---
