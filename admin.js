@@ -262,14 +262,22 @@ function renderHistoryTable(data) {
     const reversedData = [...data].reverse(); 
     const paginatedData = reversedData.slice(start, start + rowsPerPage);
 
-    tableBody.innerHTML = paginatedData.length ? paginatedData.map((item, i) => `
+    tableBody.innerHTML = paginatedData.length ? paginatedData.map((item, i) => {
+        const prizeInfo = prizes.find(p => p.name === item.prize);
+        const prizeDisplay = prizeInfo ?
+            `<span class="prize-badge"><img src="${prizeInfo.image}" alt="${item.prize}" style="width:24px; height:24px; vertical-align:middle; margin-right:8px;">${item.prize}</span>` :
+            `<span class="prize-badge">${item.prize}</span>`;
+
+        return `
         <tr>
             <td>${data.length - (start + i)}</td>
             <td><b>${item.customer}</b></td>
-            <td><span class="prize-badge">${item.prize}</span></td>
+            <td>${prizeDisplay}</td>
+            <td>${item.specialPrize || '-'}</td>
             <td style="font-family: monospace;">${item.time}</td>
         </tr>
-    `).join('') : `<tr><td colspan="4" style="text-align:center;">ยังไม่มีข้อมูล</td></tr>`;
+    `;
+    }).join('') : `<tr><td colspan="5" style="text-align:center;">ยังไม่มีข้อมูล</td></tr>`;
 
     let html = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
     for (let i = 1; i <= totalPages; i++) {
@@ -287,7 +295,11 @@ function changePage(page) {
 function exportToExcel() {
     if (!dbHistory.length) return Swal.fire('ไม่มีข้อมูล', '', 'info');
     const worksheet = XLSX.utils.json_to_sheet(dbHistory.map((item, i) => ({
-        "ลำดับ": i + 1, "ชื่อลูกค้า": item.customer, "รางวัล": item.prize, "เวลา": item.time
+        "ลำดับ": i + 1,
+        "ชื่อลูกค้า": item.customer,
+        "รางวัล": item.prize,
+        "รางวัลพิเศษ": item.specialPrize || '-',
+        "เวลา": item.time
     })));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Winners");

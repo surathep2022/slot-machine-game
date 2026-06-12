@@ -116,11 +116,12 @@ function updatePlayerInterface() {
 }
 
 // 4. ฟังก์ชันบันทึกข้อมูลไป Firebase
-function saveResultToFirebase(customerName, prizeName) {
+function saveResultToFirebase(customerName, prizeName, specialPrizeName) {
     // A. บันทึกประวัติผู้ชนะ
     db.ref('prizeHistory').push({
         customer: customerName,
         prize: prizeName,
+        specialPrize: specialPrizeName || '',
         time: new Date().toLocaleString('th-TH'),
         timestamp: firebase.database.ServerValue.TIMESTAMP
     });
@@ -206,21 +207,36 @@ async function startSpin() {
     // ตรวจสอบสต็อกของแก้วน้ำปาร์ตี้ ณ ปัจจุบัน
     const partyCupStock = dbStock["แก้วน้ำปาร์ตี้"] || 0;
 
+    // 🎯 [ตรวจสอบเบื้องต้น] ถ้าเป็นครั้งคู่แต่แก้วไม่พอ -> ให้เตือน
+    if (isEvenTurn && partyCupStock === 0) {
+        Swal.fire({
+            title: '⚠️ แก้วปาร์ตี้หมด',
+            text: 'ครั้งนี้ต้องออกแก้วปาร์ตี้ แต่สต็อกหมดแล้ว ระบบจะสุ่มจากของรางวัลอื่นแทน',
+            icon: 'warning',
+            customClass: {
+                popup: 'custom-swal-popup',
+                title: 'custom-swal-title'
+            }
+        });
+    }
+
+    const currentRoundIndex = dbTotalSpins % 100;
+    const isLactasoy = (currentRoundIndex % 5 === 0) && currentRoundIndex < 100 && currentRoundIndex >= 0;
+    const specialPrizeName = isLactasoy ? 'แลคตาซอย' : 'Hartbeat';
+
     // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
     let availablePrizes = [];
     prizes.forEach((prize, index) => {
         let count = dbStock[prize.name] || 0;
         
-        // 🎯 🚩 [กรองเงื่อนไขสลับ ครั้งคี่-ครั้งคู่ อัตโนมัติ]
-        if (partyCupStock > 40) {
-            if (!isEvenTurn && prize.name === "แก้วน้ำปาร์ตี้") {
-                // ❌ ครั้งที่หมุนเป็นเลขคี่ (1,3,5...) -> ห้ามเอาแก้วน้ำปาร์ตี้ใส่ในตู้สุ่ม
-                return; 
-            }
-            if (isEvenTurn && prize.name !== "แก้วน้ำปาร์ตี้") {
-                // ❌ ครั้งที่หมุนเป็นเลขคู่ (2,4,6...) -> บังคับเอาเฉพาะแก้วน้ำปาร์ตี้เท่านั้น (อย่างอื่นห้ามเข้า)
-                return;
-            }
+        // 🎯 🚩 [กรองเงื่อนไขสลับ ครั้งคี่-ครั้งคู่ อัตโนมัติ - บังคับตลอดเวลา]
+        if (!isEvenTurn && prize.name === "แก้วน้ำปาร์ตี้") {
+            // ❌ ครั้งที่หมุนเป็นเลขคี่ (1,3,5,...,99) -> ห้ามเอาแก้วน้ำปาร์ตี้ใส่ในตู้สุ่ม ให้สุ่มจากของอื่นแทน
+            return; 
+        }
+        if (isEvenTurn && prize.name !== "แก้วน้ำปาร์ตี้") {
+            // ❌ ครั้งที่หมุนเป็นเลขคู่ (2,4,6,...,100) -> บังคับเอาเฉพาะแก้วน้ำปาร์ตี้เท่านั้น (อย่างอื่นห้ามเข้า)
+            return;
         }
 
         // ใส่ของรางวัลที่ผ่านเกณฑ์เข้าสู่กล่องสุ่มตามจำนวนสต็อก
@@ -229,26 +245,27 @@ async function startSpin() {
         }
     });
 
-    // เซฟตี้: หากเกิดกรณีที่ครั้งเลขคู่ แต่แก้วน้ำปาร์ตี้หมดสต็อกกะทันหัน ให้ดึงของรางวัลทั้งหมดกลับมาสุ่มแก้ขัด
+    // เซฟตี้: หากเกิดกรณีที่ครั้งเลขคู่ แต่แก้วน้ำปาร์ตี้หมดสต็อก จะสลับไปสุ่มจากของรางวัลที่มีเหลือทั้งหมด
     if (availablePrizes.length === 0) {
+        // console.log("⚠️ ไม่มีของรางวัลตามเงื่อนไขคี่-คู่ -> สลับเป็นสุ่มจากของที่มีสต็อกเหลือ");
         prizes.forEach((prize, index) => {
             let count = dbStock[prize.name] || 0;
             for (let i = 0; i < count; i++) { availablePrizes.push(index); }
         });
     }
 
-    if (availablePrizes.length === 0) {
-        Swal.fire({
-            title: 'ของหมด',
-            text: 'ของรางวัลในสต็อกหมดแล้ว',
-            icon: 'warning',
-            customClass: {
-                popup: 'custom-swal-popup',
-                title: 'custom-swal-title'
-            }
-        });
-        return;
-    }
+    // if (availablePrizes.length === 0) {
+    //     Swal.fire({
+    //         title: 'ของหมด',
+    //         text: 'ของรางวัลในสต็อกหมดแล้ว',
+    //         icon: 'warning',
+    //         customClass: {
+    //             popup: 'custom-swal-popup',
+    //             title: 'custom-swal-title'
+    //         }
+    //     });
+    //     return;
+    // }
 
     // 🎯 🚩 [ตรรกะสุ่มเดิม ทำหน้าที่เลือกชิ้นจากรายการที่กรองแล้ว]
     let targetIdx = -1;
@@ -282,7 +299,7 @@ async function startSpin() {
     }
 
     // --- บันทึกข้อมูลลง Firebase ทันทีที่รู้ผล ---
-    saveResultToFirebase(currentCustomer, winPrize.name);
+    saveResultToFirebase(currentCustomer, winPrize.name, specialPrizeName);
 
     // ========================================================================
     // 🎯 🚩 [จุดแก้ไขสำคัญ: ปรับปรุงตรรกะการหมุนไปทางซ้ายให้ลงล็อกช่องรางวัลเป๊ะๆ]
