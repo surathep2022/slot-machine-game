@@ -14,6 +14,7 @@ const prizes = [
 
 let currentPage = 1;
 const rowsPerPage = 10;
+let historyPageInitialized = false;
 
 // ตัวแปรเก็บข้อมูลหลักจาก Firebase
 let dbQueue = [];
@@ -256,11 +257,19 @@ function renderHistoryTable(data) {
     if (!tableBody || !paginationDiv) return;
 
     const totalPages = Math.ceil(data.length / rowsPerPage) || 1;
+    if (!historyPageInitialized) {
+        currentPage = totalPages;
+        historyPageInitialized = true;
+    }
     if (currentPage > totalPages) currentPage = totalPages;
 
     const start = (currentPage - 1) * rowsPerPage;
-    const reversedData = [...data].reverse(); 
-    const paginatedData = reversedData.slice(start, start + rowsPerPage);
+    const sortedData = [...data].sort((a, b) => {
+        const ta = parseInt(a.timestamp) || 0;
+        const tb = parseInt(b.timestamp) || 0;
+        return ta - tb;
+    });
+    const paginatedData = sortedData.slice(start, start + rowsPerPage);
 
     tableBody.innerHTML = paginatedData.length ? paginatedData.map((item, i) => {
         const prizeInfo = prizes.find(p => p.name === item.prize);
@@ -270,7 +279,7 @@ function renderHistoryTable(data) {
 
         return `
         <tr>
-            <td>${data.length - (start + i)}</td>
+            <td>${start + i + 1}</td>
             <td><b>${item.customer}</b></td>
             <td>${prizeDisplay}</td>
             <td>${item.specialPrize || '-'}</td>
