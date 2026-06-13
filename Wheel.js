@@ -208,17 +208,17 @@ async function startSpin() {
     const partyCupStock = dbStock["แก้วน้ำปาร์ตี้"] || 0;
 
     // 🎯 [ตรวจสอบเบื้องต้น] ถ้าเป็นครั้งคู่แต่แก้วไม่พอ -> ให้เตือน
-    if (isEvenTurn && partyCupStock === 0) {
-        Swal.fire({
-            title: '⚠️ แก้วปาร์ตี้หมด',
-            text: 'ครั้งนี้ต้องออกแก้วปาร์ตี้ แต่สต็อกหมดแล้ว ระบบจะสุ่มจากของรางวัลอื่นแทน',
-            icon: 'warning',
-            customClass: {
-                popup: 'custom-swal-popup',
-                title: 'custom-swal-title'
-            }
-        });
-    }
+    // if (isEvenTurn && partyCupStock === 0) {
+    //     Swal.fire({
+    //         title: '⚠️ แก้วปาร์ตี้หมด',
+    //         text: 'ครั้งนี้ต้องออกแก้วปาร์ตี้ แต่สต็อกหมดแล้ว ระบบจะสุ่มจากของรางวัลอื่นแทน',
+    //         icon: 'warning',
+    //         customClass: {
+    //             popup: 'custom-swal-popup',
+    //             title: 'custom-swal-title'
+    //         }
+    //     });
+    // }
 
     const currentRoundIndex = dbTotalSpins % 100;
     const isLactasoy = (currentRoundIndex % 5 === 0) && currentRoundIndex < 100 && currentRoundIndex >= 0;
