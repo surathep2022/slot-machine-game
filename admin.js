@@ -156,15 +156,36 @@ function updateDashboard() {
     let totalLeft = 0;
     const invGrid = document.getElementById('inventory-grid');
     if (invGrid) {
+        // 🟢 1. ตั้งค่ากล่องแม่ให้แบ่งหน้าจอเป็น 3 คอลัมน์เท่าๆ กัน และกำหนดระยะห่าง (Gap)
+        invGrid.style.display = "grid";
+        invGrid.style.gridTemplateColumns = "repeat(3, 1fr)";
+        invGrid.style.gap = "15px";
+        invGrid.style.marginBottom = "20px";
+        
         invGrid.innerHTML = '';
         prizes.forEach(prize => {
             const count = dbStock[prize.name] || 0;
             totalLeft += count;
-            invGrid.innerHTML += `<div class="inventory-card"><span>${prize.name}</span><b>${count}</b></div>`;
+            
+            // 🟢 2. ปรับการ์ดสินค้าข้างในเป็นทรงแนวตั้ง (Vertical Card) เพื่อความสวยงามในระบบ 3 แถว
+            invGrid.innerHTML += `
+                <div class="inventory-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-radius: 6px; background: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; text-align: center; position: relative;">
+                    
+                    <img src="${prize.image}" alt="${prize.name}" 
+                         style="width: 80px; height: 80px; object-fit: contain; background: #f8fafc; border-radius: 10px; padding: 8px; margin-bottom: 12px;">
+                    
+                    <span style="font-weight: 600; color: #334155; font-size: 16px; margin-bottom: 10px; min-height: 44px; display: flex; align-items: center; justify-content: center;">
+                        ${prize.name}
+                    </span>
+                    
+                    <b style="font-size: 20px; color: #1d4ed8; background: #eff6ff; padding: 6px 20px; border-radius: 10px; width: 80%;">
+                        ${count} ชิ้น
+                    </b>
+                </div>
+            `;
         });
     }
     document.getElementById('total-left-display').textContent = totalLeft;
-
     // อัปเดตจำนวนคงเหลือของผู้สนับสนุน (โบนัสพิเศษ Hartbeat 70 / Lactasoy 30)
     const stockHartbeat = document.getElementById('stock-hartbeat');
     const stockLactasoy = document.getElementById('stock-lactasoy');
