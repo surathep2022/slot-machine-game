@@ -335,10 +335,8 @@ async function startSpin() {
 
         // --- ตรรกะควบคุมโควตารางวัลพิเศษ ---
         let specialPrizeHTML = '';
-        let currentRoundIndex = dbTotalSpins % 100; 
-        let isLactasoy = (currentRoundIndex % 5 === 0) && currentRoundIndex < 100 && currentRoundIndex >= 0;
-
-        if (isLactasoy) {
+      
+        if (specialPrizeName === "แลคตาซอย") {
             specialPrizeHTML = `
                 <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
                     <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 34px;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
@@ -390,7 +388,7 @@ async function startSpin() {
                 spinBtn.disabled = false; 
             }
         });
-    }, 8000); // ดีเลย์รับผลรวม 7 วินาที
+    }, 8000); // ดีเลย์รับผลรวม 8 วินาที
 }
 
 // 6. --- รวม Firebase Listener ไว้จุดเดียวแบบ Single Source of Truth ป้องกันลูปค้าง ---
