@@ -3,13 +3,23 @@
  */
 
 // 1. --- Configuration & Global Variables ---
-const prizes = [
-    { name: "หมอนรองคอ", image: "2.png" },   
-    { name: "กระบอกน้ำ", image: "4.png" },    
-    { name: "ชุดถนอมอาหาร", image: "5.png" },       
-    { name: "แก้วน้ำปาร์ตี้", image: "8.png" }, 
-    { name: "แก้วชงชากาแฟ", image: "10.png" },
-    { name: "ถุงผ้าเก็บของ", image: "11.png" }
+const prizes = [  
+
+    { name: "ร่มตอนเดียว", image: "1.png" },   
+    { name: "กระบอกน้ำ", image: "2.png" }, 
+    { name: "หมอนรองคอ", image: "3.png" },
+    { name: "แก้วชงชากาแฟ", image: "4.png" },
+    { name: "กระเป๋าช้อปปิ้ง", image: "5.png" },
+    { name: "กระบอกน้ำ", image: "6.png" },
+    { name: "ชุดถนอมอาหาร", image: "7.png" },
+    { name: "กระบอกแก้ว", image: "8.png" },
+    { name: "กล่องผ้าเก็บของ", image: "9.png" },
+    { name: "ถุงผ้าเก็บของ", image: "10.png" }, 
+    { name: "แก้วน้ำปาร์ตี้", image: "11.png" }, 
+    { name: "เครื่องเตรียมอาหาร", image: "12.png" },
+    { name: "เครื่องดูดฝุ่น", image: "13.png" },
+    { name: "เครื่องปั้นน้ำผลไม้", image: "14.png" },
+    { name: "เครื่องผลไม้ปั่น", image: "15.png" },    
 ];
 
 let currentPage = 1;

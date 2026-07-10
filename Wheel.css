@@ -310,42 +310,52 @@
             border-radius: 50%;
             /* border: 12px solid #2d3748; */
             box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
-            background: conic-gradient(
-                #ad0000 0deg ,
-                #ff0000 30deg,
+            background: conic-gradient(  
 
-                #e65100 30deg,
-                #ff9100 60deg,               
+                #874DA2 0deg ,
+                #C43A30 24deg,           
+                                
+                #ED6EA0 24deg,                
+                #EC8C69 48deg,
 
-                #d3b900 60deg,
-                #ffea00 90deg,
+                #FF4E50 48deg,                
+                #F9D423 72deg,              
 
-                #00aa18 90deg,
-                #00e676 120deg,
+                #ff6e40 72deg,
+                #ff9e80 96deg,                              
 
-                #00bfa5 120deg,
-                #1de9b6 150deg, 
+                #0FD850 96deg,
+                #F9F047 120deg, 
 
-                #00b0ff 150deg,
-                #80d8ff 180deg,
+                #00b0ff 120deg,
+                #80d8ff 144deg,
 
-                #007aff 180deg,
-                #448aff 210deg, 
+                #007aff 144deg,
+                #448aff 168deg,                          
 
-                #6a1b9a 210deg,
-                #e040fb 240deg,
+                #8d6e63 168deg,
+                #bcaaa4 192deg,
 
-                #c2185b 240deg,
-                #ff4081 270deg,
+                #E6B980 192deg,
+                #EACDA3 216deg,
 
-                #ff6e40 270deg,
-                #ff9e80 300deg,
+                #78909c 216deg,
+                #cfd8dc 240deg,
+                
+                #FA709A 240deg,                
+                #FEE140 264deg,
 
-                #8d6e63 300deg,
-                #bcaaa4 330deg,
+                #43e97b 264deg,
+                #38f9d7 288deg, 
 
-                #78909c 330deg,
-                #cfd8dc 360deg
+                #a6c1ee 288deg,
+                #fbc2eb 312deg,
+
+                #FE9A8B 312deg,
+                #F9748F 336deg,
+
+                #ee609c 336deg,
+                #B465DA 360deg
             );
             transition: transform 4s cubic-bezier(0.1, 0.8, 0.3, 1);
             position: relative; /* 👈 เพิ่มบรรทัดนี้เพื่อให้กล่องลูกๆ อ้างอิงจุดกึ่งกลาง */
