@@ -196,13 +196,40 @@ function updateDashboard() {
         });
     }
     document.getElementById('total-left-display').textContent = totalLeft;
-    // อัปเดตจำนวนคงเหลือของผู้สนับสนุน (โบนัสพิเศษ Hartbeat 70 / Lactasoy 30)
-    const stockHartbeat = document.getElementById('stock-hartbeat');
+   // อัปเดตจำนวนคงเหลือของผู้สนับสนุน (Lactasoy 20 / Lush 40 / Dewberry 40)
+   
+    const stockLush = document.getElementById('stock-lush');
     const stockLactasoy = document.getElementById('stock-lactasoy');
-    const lactasoyGiven = Math.min(30, Math.floor((dbTotalSpins + 4) / 5));
-    const hartbeatGiven = Math.min(70, Math.max(0, dbTotalSpins - lactasoyGiven));
-    if (stockHartbeat) stockHartbeat.textContent = 70 - hartbeatGiven;
-    if (stockLactasoy) stockLactasoy.textContent = 30 - lactasoyGiven;
+    const stockDewberry = document.getElementById('stock-dewberry')
+
+
+    // ตรรกะคำนวณจำนวนที่แจกไปแล้วแบบเฉลี่ยสลับตามรอบ (dbTotalSpins)
+    let lactasoyGiven = 0;
+    let lushGiven = 0;
+    let dewberryGiven = 0;
+
+    // คำนวณหาว่าในจำนวนการหมุนปัจจุบัน (dbTotalSpins) ได้จ่ายอะไรไปแล้วบ้าง
+    for (let i = 0; i < dbTotalSpins; i++) {
+        let roundIndex = i % 100;
+        // ใช้ตรรกะสลับเศษเดียวกันกับหน้าวงล้อเพื่อหักสต็อกให้ตรงกันเป๊ะ
+        if (roundIndex % 5 === 0) {
+            lactasoyGiven++;
+        } else if (roundIndex % 2 === 1) {
+            lushGiven++;
+        } else {
+            dewberryGiven++;
+        }
+    }
+
+    // จำกัดขีดจำกัดสูงสุดเพื่อความปลอดภัยไม่ให้ค่าติดลบ
+    lactasoyGiven = Math.min(20, lactasoyGiven);
+    lushGiven = Math.min(40, lushGiven);
+    dewberryGiven = Math.min(40, dewberryGiven);
+
+    // อัปเดตตัวเลขแสดงผลบนหน้าจอ Admin Dashboard
+    if (stockLactasoy) stockLactasoy.textContent = 20 - lactasoyGiven;
+    if (stockLush) stockLush.textContent = 40 - lushGiven;
+    if (stockDewberry) stockDewberry.textContent = 40 - dewberryGiven;
 
     // อัปเดตคิวลูกค้า
     const queueDiv = document.getElementById('current-queue-list');

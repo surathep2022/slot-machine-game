@@ -20,7 +20,7 @@
         .app-container {
             width: 1080px;
             height: 1980px;
-            background: url('background.png') center center / cover no-repeat;
+            background: url('background.jpg') center center / cover no-repeat;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -313,46 +313,47 @@
             background: conic-gradient(  
 
                 #874DA2 0deg ,
-                #C43A30 24deg,           
-                                
-                #ED6EA0 24deg,                
-                #EC8C69 48deg,
+                #C43A30 24deg,
 
-                #FF4E50 48deg,                
-                #F9D423 72deg,              
+                #ff0000 24deg,                
+                #ff3939 48deg, 
+                              
+                #ff6e40 48deg,                
+                #ff9e80 72deg,              
 
-                #ff6e40 72deg,
-                #ff9e80 96deg,                              
+                #ff8800 72deg,
+                #ffac4d 96deg,                              
 
-                #0FD850 96deg,
-                #F9F047 120deg, 
+                #f9d423 96deg,
+                #fcf95a 120deg, 
+               
+                #d4fc79 120deg,
+                #96e6a1 144deg,
 
-                #00b0ff 120deg,
-                #80d8ff 144deg,
+                #3cff00 144deg,
+                #88ff64 168deg,                          
 
-                #007aff 144deg,
-                #448aff 168deg,                          
+                #43e97b 168deg,
+                #38f9d7 192deg,
 
-                #8d6e63 168deg,
-                #bcaaa4 192deg,
+                #00F2FE  192deg,
+                #4FACFE 216deg,
 
-                #E6B980 192deg,
-                #EACDA3 216deg,
-
-                #78909c 216deg,
-                #cfd8dc 240deg,
+                #2575fc 216deg,
+                #2575fc 240deg,
                 
-                #FA709A 240deg,                
-                #FEE140 264deg,
+      
+                #b224ef 240deg,                
+                #7579ff 264deg,
 
-                #43e97b 264deg,
-                #38f9d7 288deg, 
+                #f093fb 264deg,
+                #f5576c 288deg, 
 
-                #a6c1ee 288deg,
-                #fbc2eb 312deg,
+                #007ADF 288deg,
+                #00ECBC 312deg,
 
-                #FE9A8B 312deg,
-                #F9748F 336deg,
+                #a6c1ee 312deg,
+                #fbc2eb 336deg,
 
                 #ee609c 336deg,
                 #B465DA 360deg
@@ -389,42 +390,40 @@
         }
 
         /* ปุ่มกดตรงกลาง START (ขยายขนาดขึ้นเป็น 160px) */
+        /* สไตล์ของตัวปุ่ม (ที่เป็นกล่องครอบรูป) */
         .spin-btn {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(1);
-            width: 200px;
-            height: 200px;
-            background: linear-gradient(to bottom, #ffe066, #f5b041);
-            border-radius: 50%;
-            border: 8px solid #2d3748;
-            color: #2d3748;
-            font-size: 42px; /* ตัวอักษรใหญ่ขึ้น */
-            font-weight: 900;
-            letter-spacing: 1px;
+            transform: translate(-50%, -50%);
+            width: 300px;   /* 📐 ปรับขนาดความกว้างตามที่ต้องการ */
+            height: 300px;  /* 📐 ปรับขนาดความสูงให้เท่ากับความกว้าง */
+            background: transparent; /* เอาสีพื้นหลังออก */
+            border: none;            /* เอาเส้นขอบออก */
             cursor: pointer;
-            box-shadow: 0 12px 0px #b7950b, 0 20px 25px rgba(0,0,0,0.2);
-            transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
-            z-index: 15;
+            padding: 0;
+            z-index: 10;
+            outline: none;
+            transition: transform 0.1s ease, filter 0.2s ease;
         }
 
+        /* สไตล์ของตัวรูปภาพข้างในปุ่ม */
+        .spin-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* ควบคุมให้รูปภาพคงสัดส่วนเดิมไม่เบี้ยว */
+        }
+
+        /* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ (Hover) */
         .spin-btn:hover {
-            background: linear-gradient(to bottom, #fff099, #f5b041);
+            transform: translate(-50%, -50%) scale(1.05); /* ขยายใหญ่ขึ้นเล็กน้อยให้ดูมีมิติ */
         }
 
+        /* เอฟเฟกต์ตอนกดปุ่ม (Active) */
         .spin-btn:active {
-            transform: translate(-50%, -43%) scale(0.95);
-            box-shadow: 0 4px 0px #b7950b, 0 8px 15px rgba(0,0,0,0.2);
+            transform: translate(-50%, -50%) scale(0.95); /* ยุบตัวลงเล็กน้อยเหมือนกดปุ่มจริง */
         }
-
-        .spin-btn:disabled {
-            background: #cbd5e1;
-            box-shadow: 0 6px 0px #94a3b8;
-            border-color: #64748b;
-            color: #64748b;
-            cursor: not-allowed;
-        }
+       
 
         /* กล่องแสดงผลลัพธ์ (ขยายขนาดใหญ่ขึ้น) */
         #result {

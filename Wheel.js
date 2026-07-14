@@ -223,11 +223,24 @@ async function startSpin() {
     //     });
     // }
 
-    const currentRoundIndex = dbTotalSpins % 100;
-    const isLactasoy = (currentRoundIndex % 5 === 0) && currentRoundIndex < 100 && currentRoundIndex >= 0;
-    const specialPrizeName = isLactasoy ? 'แลคตาซอย' : 'Hartbeat';
+    const currentRoundIndex = dbTotalSpins % 100; // รอบที่ 0 - 99
+    let specialPrizeName = "";
+
+    // 🎯 ตรรกะสลับแจกกระจายตัวอย่างทั่วถึง (สัดส่วน 20 : 40 : 40)
+    if (currentRoundIndex % 5 === 0) {
+        // ออกทุก ๆ รอบที่หาร 5 ลงตัว (เช่น 0, 5, 10, 15... จนถึง 95 รวมทั้งหมด 20 ชิ้นพอดี)
+        specialPrizeName = 'แลคตาซอย';
+    } else if (currentRoundIndex % 2 === 1) {
+        // ออกรอบที่เป็นเลขคี่ที่เหลือทั้งหมด (รวมทั้งหมด 40 ชิ้นพอดี)
+        specialPrizeName = 'ลัช';
+    } else {
+        // ออกรอบที่เป็นเลขคู่ที่เหลือทั้งหมด (รวมทั้งหมด 40 ชิ้นพอดี)
+        specialPrizeName = 'ดิวเบอร์รี่';
+    }
 
     // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
+
+    
     let availablePrizes = [];
     prizes.forEach((prize, index) => {
         let count = dbStock[prize.name] || 0;
@@ -257,19 +270,7 @@ async function startSpin() {
         });
     }
 
-    // if (availablePrizes.length === 0) {
-    //     Swal.fire({
-    //         title: 'ของหมด',
-    //         text: 'ของรางวัลในสต็อกหมดแล้ว',
-    //         icon: 'warning',
-    //         customClass: {
-    //             popup: 'custom-swal-popup',
-    //             title: 'custom-swal-title'
-    //         }
-    //     });
-    //     return;
-    // }
-
+   
     // 🎯 🚩 [ตรรกะสุ่มเดิม ทำหน้าที่เลือกชิ้นจากรายการที่กรองแล้ว]
     let targetIdx = -1;
     let winPrize = null;
@@ -303,11 +304,7 @@ async function startSpin() {
 
     // --- บันทึกข้อมูลลง Firebase ทันทีที่รู้ผล ---
     saveResultToFirebase(currentCustomer, winPrize.name, specialPrizeName);
-
-    // ========================================================================
-    // 🎯 🚩 [จุดแก้ไขสำคัญ: ปรับปรุงตรรกะการหมุนไปทางซ้ายให้ลงล็อกช่องรางวัลเป๊ะๆ]
-    // ========================================================================
-    
+ 
     // 1. คำนวณหาตำแหน่งองศาตรงกลางของช่องรางวัลเป้าหมาย
     //    ใช้มุมลบเพราะวงล้อหมุนไปทางซ้ายและลูกศรชี้ขึ้นบน
     const targetDegree = -(targetIdx * degreesPerSlice + (degreesPerSlice / 2));
@@ -337,20 +334,26 @@ async function startSpin() {
         }
 
         // --- ตรรกะควบคุมโควตารางวัลพิเศษ ---
+        // --- ตรรกะควบคุมโควตารางวัลพิเศษ (เวอร์ชันลดโค้ดซ้ำซ้อน) ---
         let specialPrizeHTML = '';
-      
+        let specialPrizeImage = '';
+
+        // 1. ตรวจสอบชื่อแบรนด์เพื่อเลือกชื่อไฟล์รูปภาพที่ถูกต้อง
         if (specialPrizeName === "แลคตาซอย") {
-            specialPrizeHTML = `
-                <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
-                    <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 34px;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
-                    <img src="lactasoy.png" style="width:300px; height:300px; object-fit:contain;">
-                </div>
-            `;
+            specialPrizeImage = "lactasoy.png";
+        } else if (specialPrizeName === "ดิวเบอร์รี่") {
+            specialPrizeImage = "dewberry.png";
         } else {
+            // มั่นใจได้ว่าค่าที่เหลือ (ลัช) จะตกมาที่รูปนี้แน่นอน
+            specialPrizeImage = "lush.png";
+        }
+
+        // 2. วาดโครงสร้าง HTML เพียงครั้งเดียวโดยใช้ตัวแปรชื่อรูปภาพด้านบน
+        if (specialPrizeImage) {
             specialPrizeHTML = `
                 <div style="margin-top:15px; background:#f9f9f9; padding:20px; border-radius:15px; border: 2px solid #f1c40f;">
                     <p style="margin: 0 0 10px 0; color: #34495e; font-weight: bold; font-size: 34px;">✨ รับเพิ่ม! รางวัลพิเศษ ✨</p>
-                    <img src="hartbeat.png" style="width:300px; height:300px; object-fit:contain;">
+                    <img src="${specialPrizeImage}" style="width:300px; height:300px; object-fit:contain;">
                 </div>
             `;
         }
