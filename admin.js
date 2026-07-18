@@ -6,7 +6,7 @@
 const prizes = [  
 
     { name: "ร่มตอนเดียว", image: "1.png" },   
-    { name: "กระบอกน้ำ", image: "2.png" }, 
+    { name: "แก้วเก็บความเย็น", image: "2.png" }, 
     { name: "หมอนรองคอ", image: "3.png" },
     { name: "แก้วชงชากาแฟ", image: "4.png" },
     { name: "กระเป๋าช้อปปิ้ง", image: "5.png" },
