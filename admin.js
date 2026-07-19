@@ -223,12 +223,12 @@ function updateDashboard() {
 
     // จำกัดขีดจำกัดสูงสุดเพื่อความปลอดภัยไม่ให้ค่าติดลบ
     lactasoyGiven = Math.min(20, lactasoyGiven);
-    lushGiven = Math.min(40, lushGiven);
-    dewberryGiven = Math.min(40, dewberryGiven);
+    lushGiven = Math.min(60, lushGiven);
+    dewberryGiven = Math.min(20, dewberryGiven);
 
     // อัปเดตตัวเลขแสดงผลบนหน้าจอ Admin Dashboard
     if (stockLactasoy) stockLactasoy.textContent = 20 - lactasoyGiven;
-    if (stockLush) stockLush.textContent = 40 - lushGiven;
+    if (stockLush) stockLush.textContent = 60 - lushGiven;
     if (stockDewberry) stockDewberry.textContent = 40 - dewberryGiven;
 
     // อัปเดตคิวลูกค้า
