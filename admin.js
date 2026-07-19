@@ -229,7 +229,7 @@ function updateDashboard() {
     // อัปเดตตัวเลขแสดงผลบนหน้าจอ Admin Dashboard
     if (stockLactasoy) stockLactasoy.textContent = 20 - lactasoyGiven;
     if (stockLush) stockLush.textContent = 60 - lushGiven;
-    if (stockDewberry) stockDewberry.textContent = 40 - dewberryGiven;
+    if (stockDewberry) stockDewberry.textContent = 20 - dewberryGiven;
 
     // อัปเดตคิวลูกค้า
     const queueDiv = document.getElementById('current-queue-list');
