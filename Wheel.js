@@ -1,12 +1,26 @@
 // 1. ตั้งค่า Firebase Config ของคุณ
+
+
+
+// const firebaseConfig = {
+//     apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
+//     authDomain: "slot-machine-ff297.firebaseapp.com",
+//     databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
+//     projectId: "slot-machine-ff297",
+//     storageBucket: "slot-machine-ff297.firebasestorage.app",
+//     messagingSenderId: "196859530049",
+//     appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
+// };
+
+// DB Test Config
 const firebaseConfig = {
-    apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
-    authDomain: "slot-machine-ff297.firebaseapp.com",
-    databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "slot-machine-ff297",
-    storageBucket: "slot-machine-ff297.firebasestorage.app",
-    messagingSenderId: "196859530049",
-    appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
+  apiKey: "AIzaSyAimyAzniVUuEbFmriLyFibMeIIvpeVceo",
+  authDomain: "slot-machine-test-7e89c.firebaseapp.com",
+  databaseURL: "https://slot-machine-test-7e89c-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "slot-machine-test-7e89c",
+  storageBucket: "slot-machine-test-7e89c.firebasestorage.app",
+  messagingSenderId: "564330481247",
+  appId: "1:564330481247:web:f134ce656cd0a5d2113dea"
 };
 
 // เริ่มต้น Firebase
@@ -50,6 +64,7 @@ let dbQueue = [];
 let dbStock = {};
 let dbTotalSpins = 0;
 let lastWonPrizeName = "";
+let dbPrizeOrder = {};
 
 // 🛠️ ฟังก์ชันสร้างรูปภาพยัดลงไปในวงล้อ HTML เดิม (เอาส่วนข้อความออกแล้ว)
 function createWheelItems() {
@@ -93,6 +108,18 @@ function formatDisplayName(fullName) {
     }
     
     return firstName;
+}
+
+function getOrderedPrizeForTurn() {
+    const slotKey = String((dbTotalSpins % 100) + 1);
+    const orderedName = dbPrizeOrder[slotKey];
+    if (!orderedName) return null;
+
+    const orderedPrize = prizes.find(prize => prize.name === orderedName);
+    if (!orderedPrize) return null;
+
+    const stockCount = dbStock[orderedPrize.name] || 0;
+    return stockCount > 0 ? orderedPrize : null;
 }
 
 // 3. --- ฟังก์ชันอัปเดต UI รายชื่อคิวลูกค้าด้านล่าง ---
@@ -160,7 +187,7 @@ async function startSpin() {
         return;
     }
 
-    // 2. --- ตรวจสอบโควตา 100 ครั้ง และทำการสลับรอบอัตโนมัติ ---
+    // 2. --- ตรวจสอบโควตา 100 ครั้ง และถ้ามีรอบถัดไป ให้สลับรอบอัตโนมัติ ---
     if (dbTotalSpins >= 100) {
         const snapshot = await db.ref().once('value');
         const data = snapshot.val();
@@ -184,18 +211,9 @@ async function startSpin() {
                 });
                 location.reload();
             });
-        } else {
-            Swal.fire({
-                title: 'ครบโควตา 100 รอบ',
-                text: 'กรุณาตั้งค่าของรางวัลรอบถัดไปที่หน้า Admin ก่อนเริ่มต่อ',
-                icon: 'warning',
-                customClass: {
-                    popup: 'custom-swal-popup',
-                    title: 'custom-swal-title'
-                }
-            });
+            return;
         }
-        return; 
+        // ถ้ายังไม่มีคิวรอบถัดไป ให้ยังสามารถหมุนต่อได้โดยใช้ลำดับรางวัล 1-100 ซ้ำอีกครั้ง
     }
 
     // --- เริ่มกระบวนการสุ่มปกติ ---
@@ -239,95 +257,69 @@ async function startSpin() {
     }
 
     // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
+    let winPrize = null;
+    let targetIdx = -1;
+    const orderedPrize = getOrderedPrizeForTurn();
 
-    //----ใช้วันเสาร-อาทิตย์------
-    // let availablePrizes = [];
-    // prizes.forEach((prize, index) => {
-    //     let count = dbStock[prize.name] || 0;
-        
-    //     // 🎯 🚩 [กรองเงื่อนไขสลับ ครั้งคี่-ครั้งคู่ อัตโนมัติ - บังคับตลอดเวลา]
-    //     if (!isEvenTurn && prize.name === "กระเป๋าช้อปปิ้ง") {
-    //         // ❌ ครั้งที่หมุนเป็นเลขคี่ (1,3,5,...,99) -> ห้ามเอาแก้วน้ำปาร์ตี้ใส่ในตู้สุ่ม ให้สุ่มจากของอื่นแทน
-    //         return; 
-    //     }
-    //     if (isEvenTurn && prize.name !== "กระเป๋าช้อปปิ้ง") {
-    //         // ❌ ครั้งที่หมุนเป็นเลขคู่ (2,4,6,...,100) -> บังคับเอาเฉพาะแก้วน้ำปาร์ตี้เท่านั้น (อย่างอื่นห้ามเข้า)
-    //         return;
-    //     }
+    if (orderedPrize) {
+        winPrize = orderedPrize;
+        targetIdx = prizes.findIndex((prize) => prize.name === winPrize.name);
+    } else {
+        let availablePrizes = [];
 
-    //     // ใส่ของรางวัลที่ผ่านเกณฑ์เข้าสู่กล่องสุ่มตามจำนวนสต็อก
-    //     for (let i = 0; i < count; i++) { 
-    //         availablePrizes.push(index); 
-    //     }
-    // });
+        // 🎯 เช็คว่าเป็นรอบสุ่มรางวัลอื่น (รอบที่ลงท้ายด้วย 5 หรือ 0)
+        const isRandomOtherRound = (currentRoundIndex % 5 === 0);
 
+        // 🛒 เช็คสต็อกของกระเป๋าช้อปปิ้งในฐานข้อมูล ณ ปัจจุบันก่อนว่าเหลือไหม
+        const shoppingBagStock = dbStock["กระเป๋าช้อปปิ้ง"] || 0;
 
-    let availablePrizes = [];   
-
-    // 🎯 เช็คว่าเป็นรอบสุ่มรางวัลอื่น (รอบที่ลงท้ายด้วย 5 หรือ 0)
-    const isRandomOtherRound = (currentRoundIndex % 5 === 0);
-
-    // 🛒 เช็คสต็อกของกระเป๋าช้อปปิ้งในฐานข้อมูล ณ ปัจจุบันก่อนว่าเหลือไหม
-    const shoppingBagStock = dbStock["กระเป๋าช้อปปิ้ง"] || 0;
-
-    prizes.forEach((prize, index) => {
-        let count = dbStock[prize.name] || 0;
-        
-        if (isRandomOtherRound) {
-            // ❌ รอบที่ 5, 10, 15... บังคับแบนกระเป๋าช้อปปิ้งเหมือนเดิม
-            if (prize.name === "กระเป๋าช้อปปิ้ง") {
-                return;
-            }
-        } else {
-            // 🚨 [เพิ่มระบบเซฟตี้ตรงนี้] รอบปกติที่ควรจะเป็น "กระเป๋าช้อปปิ้ง"
-            if (shoppingBagStock > 0) {
-                // ก) ถ้ากระเป๋ายังมีสต็อกเหลือ -> บังคับออกเฉพาะกระเป๋าช้อปปิ้ง (ของอื่นห้ามเข้า)
-                if (prize.name !== "กระเป๋าช้อปปิ้ง") {
-                    return;
-                }
-            } else {
-                // ข) 🚩 ถ้ากระเป๋าช้อปปิ้ง "หมดเกลี้ยงแล้ว" -> ปล่อยให้ของชิ้นอื่นๆ เข้ามาสุ่มแข่งกันได้เลย 
-                // และแบนกระเป๋าช้อปปิ้งที่หมดแล้วออกไป ไม่ให้ตู้สุ่มเจอค่าว่าง
+        prizes.forEach((prize, index) => {
+            let count = dbStock[prize.name] || 0;
+            
+            if (isRandomOtherRound) {
                 if (prize.name === "กระเป๋าช้อปปิ้ง") {
                     return;
                 }
+            } else {
+                if (shoppingBagStock > 0) {
+                    if (prize.name !== "กระเป๋าช้อปปิ้ง") {
+                        return;
+                    }
+                } else {
+                    if (prize.name === "กระเป๋าช้อปปิ้ง") {
+                        return;
+                    }
+                }
             }
-        }
 
-        // ใส่ของรางวัลที่ผ่านเกณฑ์เข้าสู่กล่องสุ่มตามจำนวนสต็อกที่มีอยู่
-        for (let i = 0; i < count; i++) { 
-            availablePrizes.push(index); 
-        }
-    });
-
-    // เซฟตี้: หากเกิดกรณีที่ครั้งเลขคู่ แต่แก้วน้ำปาร์ตี้หมดสต็อก จะสลับไปสุ่มจากของรางวัลที่มีเหลือทั้งหมด
-    if (availablePrizes.length === 0) {
-        // console.log("⚠️ ไม่มีของรางวัลตามเงื่อนไขคี่-คู่ -> สลับเป็นสุ่มจากของที่มีสต็อกเหลือ");
-        prizes.forEach((prize, index) => {
-            let count = dbStock[prize.name] || 0;
-            for (let i = 0; i < count; i++) {
-                 availablePrizes.push(index); 
+            for (let i = 0; i < count; i++) { 
+                availablePrizes.push(index); 
             }
         });
-    }
 
-   
-    // 🎯 🚩 [ตรรกะสุ่มเดิม ทำหน้าที่เลือกชิ้นจากรายการที่กรองแล้ว]
-    let targetIdx = -1;
-    let winPrize = null;
-    let attempts = 0; 
-
-    while (attempts < 10) {
-        const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-        targetIdx = availablePrizes[randomIndex];
-        winPrize = prizes[targetIdx];
-
-        const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
-        
-        if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
-            break;
+        if (availablePrizes.length === 0) {
+            prizes.forEach((prize, index) => {
+                let count = dbStock[prize.name] || 0;
+                for (let i = 0; i < count; i++) {
+                     availablePrizes.push(index); 
+                }
+            });
         }
-        attempts++;
+
+        let attempts = 0; 
+
+        while (attempts < 10) {
+            const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+            targetIdx = availablePrizes[randomIndex];
+            winPrize = prizes[targetIdx];
+
+            const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
+            
+            if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
+                break;
+            }
+            attempts++;
+        }
     }
 
     lastWonPrizeName = winPrize.name; 
@@ -484,6 +476,7 @@ db.ref().on('value', (snapshot) => {
     dbQueue = rawQueue;
     dbStock = data.currentStock || {};
     dbTotalSpins = data.totalSpins || 0;
+    dbPrizeOrder = data.prizeOrder || {};
 
     // อัปเดต UI หน้าจอทั้งหมดให้เสร็จสรรพ
     updatePlayerInterface();

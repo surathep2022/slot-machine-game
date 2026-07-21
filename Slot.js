@@ -10,13 +10,22 @@ const fakeItemsCount = 60;
 const slotContainer = document.getElementById('slot-container');
 const btn = document.getElementById('spin-btn');
 
-const prizes = [       
-    { name: "หมอนรองคอ", image: "2.png" },   
-    { name: "กระบอกน้ำ", image: "4.png" },    
-    { name: "ชุดถนอมอาหาร", image: "5.png" },       
-    { name: "แก้วน้ำปาร์ตี้", image: "8.png" }, 
-    { name: "แก้วชงชากาแฟ", image: "10.png" },
-    { name: "ถุงผ้าเก็บของ", image: "11.png" },    
+const prizes = [
+    { name: "ร่มตอนเดียว", image: "1.png" },
+    { name: "แก้วเก็บความเย็น", image: "2.png" },
+    { name: "หมอนรองคอ", image: "3.png" },
+    { name: "แก้วชงชากาแฟ", image: "4.png" },
+    { name: "กระเป๋าช้อปปิ้ง", image: "5.png" },
+    { name: "กระบอกน้ำ", image: "6.png" },
+    { name: "ชุดถนอมอาหาร", image: "7.png" },
+    { name: "กระบอกแก้ว", image: "8.png" },
+    { name: "กล่องผ้าเก็บของ", image: "9.png" },
+    { name: "ถุงผ้าเก็บของ", image: "10.png" },
+    { name: "แก้วน้ำปาร์ตี้", image: "11.png" },
+    { name: "เครื่องเตรียมอาหาร", image: "12.png" },
+    { name: "เครื่องดูดฝุ่น", image: "13.png" },
+    { name: "เครื่องปั้นน้ำผลไม้", image: "14.png" },
+    { name: "เครื่องผลไม้ปั่น", image: "15.png" }
 ];
 
 // --- ตัวแปรสำหรับเก็บข้อมูลจาก Firebase (Global State) ---  
@@ -24,6 +33,7 @@ let dbQueue = [];
 let dbStock = {};
 let dbTotalSpins = 0;
 let lastWonPrizeName = "";
+let dbPrizeOrder = {};
 
 // ฟังก์ชันสร้าง Pattern 6 ช่อง (5 สินค้า + 1 READY ที่ตำแหน่ง index 2)
 function getBasePattern() {
@@ -86,6 +96,18 @@ function formatDisplayName(fullName) {
     }
     
     return firstName;
+}
+
+function getOrderedPrizeForTurn() {
+    const slotKey = String(dbTotalSpins + 1);
+    const orderedName = dbPrizeOrder[slotKey];
+    if (!orderedName) return null;
+
+    const orderedPrize = prizes.find(prize => prize.name === orderedName);
+    if (!orderedPrize) return null;
+
+    const stockCount = dbStock[orderedPrize.name] || 0;
+    return stockCount > 0 ? orderedPrize : null;
 }
 
 // 3. --- ฟังก์ชันอัปเดต UI รายชื่อคิวลูกค้าด้านล่าง ---
@@ -191,35 +213,38 @@ async function startSpin() {
     const currentCustomer = dbQueue[0];
 
     // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
-    let availablePrizes = [];
-    prizes.forEach((prize, index) => {
-        let count = dbStock[prize.name] || 0;
-        for (let i = 0; i < count; i++) { availablePrizes.push(index); }
-    });
-
-    if (availablePrizes.length === 0) {
-        Swal.fire('ของหมด', 'ของรางวัลในสต็อกหมดแล้ว', 'warning');
-        return;
-    }
-
-    // 🎯 🚩 [ปรับปรุงจุดที่ 1: ตรรกะสุ่มแบบไม่ซ้ำชิ้นเดิมกับตาที่แล้ว]
-    let targetIdx = -1;
     let winPrize = null;
-    let attempts = 0; 
+    const orderedPrize = getOrderedPrizeForTurn();
 
-    while (attempts < 10) {
-        const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-        targetIdx = availablePrizes[randomIndex];
-        winPrize = prizes[targetIdx];
+    if (orderedPrize) {
+        winPrize = orderedPrize;
+    } else {
+        let availablePrizes = [];
+        prizes.forEach((prize, index) => {
+            let count = dbStock[prize.name] || 0;
+            for (let i = 0; i < count; i++) { availablePrizes.push(index); }
+        });
 
-        // ตรวจเช็คประเภทของรางวัลที่เหลืออยู่ในสต็อกทั้งหมด
-        const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
-        
-        // เงื่อนไข: ถ้าสุ่มได้ชื่อไม่ซ้ำกับรอบที่แล้ว (lastWonPrizeName) หรือเหลือของในคลังแค่ประเภทเดียวแล้ว ให้ผ่านได้เลย
-        if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
-            break;
+        if (availablePrizes.length === 0) {
+            Swal.fire('ของหมด', 'ของรางวัลในสต็อกหมดแล้ว', 'warning');
+            return;
         }
-        attempts++;
+
+        let targetIdx = -1;
+        let attempts = 0; 
+
+        while (attempts < 10) {
+            const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+            targetIdx = availablePrizes[randomIndex];
+            winPrize = prizes[targetIdx];
+
+            const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
+            
+            if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
+                break;
+            }
+            attempts++;
+        }
     }
 
     // บันทึกชื่อรางวัลนี้ไว้ เช็คกับคิวคนถัดไป

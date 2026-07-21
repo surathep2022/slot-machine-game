@@ -245,6 +245,177 @@ function updateDashboard() {
     renderHistoryTable(dbHistory);
 }
 
+
+// เก็บข้อมูลลำดับรางวัลที่เลือกไว้สำหรับ 100 ครั้ง
+let selectedOrders = {};
+let currentActiveSlot = null;
+
+function getPrizeByName(prizeName) {
+    return prizes.find(prize => prize.name === prizeName) || null;
+}
+
+function getSelectedCounts(excludeSlot = null) {
+    const counts = {};
+    Object.entries(selectedOrders).forEach(([slot, prize]) => {
+        if (!prize || !prize.name) return;
+        if (excludeSlot !== null && String(excludeSlot) === String(slot)) return;
+        counts[prize.name] = (counts[prize.name] || 0) + 1;
+    });
+    return counts;
+}
+
+function getAvailableStock(prizeName, excludeSlot = null) {
+    const selectedCounts = getSelectedCounts(excludeSlot);
+    const totalStock = dbStock[prizeName] || 0;
+    return Math.max(totalStock - (selectedCounts[prizeName] || 0), 0);
+}
+
+function renderOrderGrid() {
+    const container = document.getElementById('order-grid');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    for (let slotNumber = 1; slotNumber <= 100; slotNumber++) {
+        const box = document.createElement('div');
+        box.className = 'grid-box';
+        box.id = `box-${slotNumber}`;
+        box.onclick = () => openModal(slotNumber);
+
+        const numberLabel = document.createElement('span');
+        numberLabel.className = 'box-number';
+        numberLabel.textContent = slotNumber;
+        box.appendChild(numberLabel);
+
+        const prize = selectedOrders[slotNumber];
+        if (prize) {
+            const img = document.createElement('img');
+            img.src = prize.image;
+            img.alt = prize.name;
+            img.className = 'box-image';
+            img.onerror = () => { img.src = 'https://via.placeholder.com/60?text=Image'; };
+            box.appendChild(img);
+
+            const nameLabel = document.createElement('span');
+            nameLabel.className = 'box-prize-name';
+            nameLabel.textContent = prize.name;
+            box.appendChild(nameLabel);
+
+            box.style.borderStyle = 'solid';
+            box.style.backgroundColor = '#ffffff';
+        } else {
+            box.style.borderStyle = 'dashed';
+            box.style.backgroundColor = '#f1f3f5';
+        }
+
+        container.appendChild(box);
+    }
+}
+
+function openModal(slotNumber) {
+    currentActiveSlot = slotNumber;
+    document.getElementById('modalTitle').textContent = `เลือกของรางวัลสำหรับลำดับที่ ${slotNumber}`;
+
+    const pickerContainer = document.getElementById('prizePicker');
+    pickerContainer.innerHTML = '';
+
+    prizes.forEach((prize) => {
+        const remaining = getAvailableStock(prize.name, currentActiveSlot);
+        const isDisabled = remaining === 0 && !(selectedOrders[currentActiveSlot] && selectedOrders[currentActiveSlot].name === prize.name);
+
+        const card = document.createElement('div');
+        card.className = 'prize-card';
+        if (isDisabled) {
+            card.style.opacity = '0.45';
+            card.style.cursor = 'not-allowed';
+        } else {
+            card.onclick = () => selectPrizeForSlot(prize);
+        }
+
+        card.innerHTML = `
+          <img src="${prize.image}" alt="${prize.name}" onerror="this.src='https://via.placeholder.com/60?text=No+Img'">
+          <span>${prize.name}</span>
+          <span class="prize-remaining" style="font-size:0.8rem; color:#7f8c8d; margin-top:6px; display:block;">${remaining > 0 ? `เหลือ ${remaining}` : 'หมดแล้ว'}</span>
+        `;
+        pickerContainer.appendChild(card);
+    });
+
+    document.getElementById('prizeModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('prizeModal').classList.remove('active');
+    currentActiveSlot = null;
+}
+
+function selectPrizeForSlot(prize) {
+    if (!currentActiveSlot) return;
+
+    const available = getAvailableStock(prize.name, currentActiveSlot);
+    if (available <= 0 && !(selectedOrders[currentActiveSlot] && selectedOrders[currentActiveSlot].name === prize.name)) {
+        Swal.fire('หมดแล้ว', `ของรางวัล ${prize.name} ไม่มีเหลือให้เลือกในตอนนี้`, 'error');
+        return;
+    }
+
+    selectedOrders[currentActiveSlot] = prize;
+    renderOrderGrid();
+    closeModal();
+}
+
+function clearSelectedSlot() {
+    if (!currentActiveSlot) return;
+
+    delete selectedOrders[currentActiveSlot];
+    renderOrderGrid();
+    closeModal();
+}
+
+function savePrizeOrder() {
+    const selectedCounts = getSelectedCounts();
+    const invalidPrizes = Object.keys(selectedCounts).filter(prizeName => selectedCounts[prizeName] > (dbStock[prizeName] || 0));
+    if (invalidPrizes.length > 0) {
+        Swal.fire('ไม่สามารถบันทึก', `เลือกของรางวัลเกินสต็อกจริงสำหรับ: ${invalidPrizes.join(', ')}`, 'error');
+        return;
+    }
+
+    const payload = {};
+    Object.entries(selectedOrders).forEach(([slot, prize]) => {
+        if (prize && prize.name) payload[slot] = prize.name;
+    });
+
+    db.ref().update({ prizeOrder: payload }).then(() => {
+        Swal.fire('สำเร็จ', `บันทึกลำดับรางวัลเรียบร้อยแล้ว (${Object.keys(payload).length} ช่อง)`, 'success');
+    });
+}
+
+function clearAllOrders() {
+    Object.keys(selectedOrders).forEach(key => delete selectedOrders[key]);
+    renderOrderGrid();
+    savePrizeOrder();
+}
+
+function loadPrizeOrderFromFirebase(orderData) {
+    Object.keys(selectedOrders).forEach(key => delete selectedOrders[key]);
+
+    const normalized = orderData || {};
+    Object.entries(normalized).forEach(([slot, prizeName]) => {
+        const prize = getPrizeByName(prizeName);
+        if (prize) {
+            selectedOrders[slot] = prize;
+        }
+    });
+
+    renderOrderGrid();
+}
+
+function initGrid() {
+    renderOrderGrid();
+}
+
+initGrid();
+
+
+
 function updateStatusTags(nextQueue) {
     const nextStatus = document.getElementById('next-status');
     const summaryBody = document.getElementById('next-summary-body');
@@ -410,7 +581,8 @@ function resetSystem() {
                 currentStock: {},
                 nextRoundQueue: {},
                 prizeHistory: {},
-                totalSpins: 0
+                totalSpins: 0,
+                prizeOrder: {}
             }).then(() => {
                 Swal.fire('ล้างข้อมูลเรียบร้อย', '', 'success').then(() => location.reload());
             });
@@ -448,6 +620,8 @@ db.ref().on('value', (snapshot) => {
     
     const historyObj = data.prizeHistory || {};
     dbHistory = Object.keys(historyObj).map(key => historyObj[key]);
+
+    loadPrizeOrderFromFirebase(data.prizeOrder || {});
 
     // วาดกล่อง Input ตั้งค่าเริ่มต้น (วาดครั้งเดียวเพื่อป้องกันหน้าจอกระตุกตอนกำลังพิมพ์)
     if (!document.querySelector('.current-input')) {
