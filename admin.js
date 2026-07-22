@@ -135,62 +135,30 @@ function saveStock(isQueue) {
 
 // 5. --- Dashboard & UI Management ---
 function updateDashboard() {
-    const currentInputs = document.querySelectorAll('.current-input');
-    const resetBtn = document.querySelector('.btn-reset');
-    
-    // ล็อคสต็อกรอบปัจจุบันหากกำลังมีการเล่น
-    const isPlaying = dbTotalSpins > 0 && dbTotalSpins < 100;
-
-    if (isPlaying) {
-        if(resetBtn) {
-            resetBtn.disabled = true;
-            resetBtn.style.background = "#95a5a6";
-            resetBtn.innerHTML = `🔒 กำลังเล่น (${dbTotalSpins}/100)`;
-        }
-        currentInputs.forEach(input => input.disabled = true);
-    } else {
-        if(resetBtn) {
-            resetBtn.disabled = false;
-            resetBtn.style.background = "#3498db";
-            resetBtn.innerHTML = "🔄 รีเซ็ตรอบปัจจุบันใหม่";
-        }
-        currentInputs.forEach(input => input.disabled = false);
-    }
-
-    // ฝั่งรอบถัดไปต้องไม่โดนล็อคเสมอ
-    document.querySelectorAll('.next-input').forEach(input => input.disabled = false);
+    const stockTotal = Object.values(dbStock).reduce((sum, value) => sum + (parseInt(value) || 0), 0);
 
     // อัปเดต Stats
-    document.getElementById('count-display').textContent = `${dbTotalSpins} / 100`;
+    document.getElementById('count-display').textContent = `${dbTotalSpins} / ${stockTotal}`;
     
     let totalLeft = 0;
     const invGrid = document.getElementById('inventory-grid');
     if (invGrid) {
-        // 🟢 1. ตั้งค่ากล่องแม่ให้แบ่งหน้าจอเป็น 3 คอลัมน์เท่าๆ กัน และกำหนดระยะห่าง (Gap)
         invGrid.style.display = "grid";
-        invGrid.style.gridTemplateColumns = "repeat(3, 1fr)";
-        invGrid.style.gap = "15px";
-        invGrid.style.marginBottom = "20px";
+        invGrid.style.gridTemplateColumns = "repeat(auto-fit, minmax(180px, 1fr))";
+        invGrid.style.gap = "14px";
+        invGrid.style.marginBottom = "16px";
         
         invGrid.innerHTML = '';
         prizes.forEach(prize => {
             const count = dbStock[prize.name] || 0;
             totalLeft += count;
             
-            // 🟢 2. ปรับการ์ดสินค้าข้างในเป็นทรงแนวตั้ง (Vertical Card) เพื่อความสวยงามในระบบ 3 แถว
             invGrid.innerHTML += `
-                <div class="inventory-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-radius: 6px; background: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; text-align: center; position: relative;">
-                    
-                    <img src="${prize.image}" alt="${prize.name}" 
-                         style="width: 80px; height: 80px; object-fit: contain; background: #f8fafc; border-radius: 10px; padding: 8px; margin-bottom: 12px;">
-                    
-                    <span style="font-weight: 600; color: #334155; font-size: 16px; margin-bottom: 10px; min-height: 44px; display: flex; align-items: center; justify-content: center;">
-                        ${prize.name}
-                    </span>
-                    
-                    <b style="font-size: 20px; color: #1d4ed8; background: #eff6ff; padding: 6px 20px; border-radius: 10px; width: 80%;">
-                        ${count} ชิ้น
-                    </b>
+                <div class="inventory-card">
+                    <img src="${prize.image}" alt="${prize.name}">
+                    <span>${prize.name}</span>
+                    <label class="inventory-label">จำนวน</label>
+                    <input type="number" min="0" class="inventory-stock-input" data-name="${prize.name}" value="${count}">
                 </div>
             `;
         });
@@ -370,6 +338,26 @@ function clearSelectedSlot() {
     delete selectedOrders[currentActiveSlot];
     renderOrderGrid();
     closeModal();
+}
+
+function saveInventoryStock() {
+    const stockUpdates = {};
+    document.querySelectorAll('.inventory-stock-input').forEach(input => {
+        const prizeName = input.getAttribute('data-name');
+        const value = Math.max(0, parseInt(input.value) || 0);
+        stockUpdates[prizeName] = value;
+    });
+
+    db.ref().update({
+        currentStock: stockUpdates,
+        prizeStock: stockUpdates
+    }).then(() => {
+        dbStock = { ...dbStock, ...stockUpdates };
+        updateDashboard();
+        Swal.fire('สำเร็จ', 'บันทึกจำนวนสต็อกเรียบร้อยแล้ว', 'success');
+    }).catch(() => {
+        Swal.fire('ผิดพลาด', 'บันทึกสต็อกไม่สำเร็จ', 'error');
+    });
 }
 
 function savePrizeOrder() {

@@ -65,63 +65,6 @@
 
 
 
-    <div class="admin-container">
-        <div class="config-card current-round">
-            <div class="card-header">
-                <h3>🎰 รอบปัจจุบัน (กำลังใช้งาน)</h3>
-                <div id="current-status" class="status-tag running">Active</div>
-            </div>
-            <div id="config-grid-current" class="config-grid"></div>
-            <div class="card-footer">
-                <div id="total-check-current" class="total-text">รวม: 0 / 100</div>
-                <button class="btn-save btn-reset" onclick="saveStock(false)">
-                    🔄 รีเซ็ตรอบปัจจุบันใหม่
-                </button>
-            </div>
-        </div>
-
-        <div class="config-card next-round">
-            <div class="card-header">
-                <h3>⏳ ตั้งค่ารอบถัดไป (คิว)</h3>
-                <div id="next-status" class="status-tag pending">Waiting</div>
-            </div>
-            <div id="config-grid-next" class="config-grid"></div>
-            <div class="card-footer">
-                <div id="total-check-next" class="total-text">รวม: 0 / 100</div>
-                <button class="btn-save btn-queue" onclick="saveStock(true)">
-                    💾 บันทึกคิวรอบถัดไป
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="next-round-summary-card">
-        <div class="summary-header">
-            <h4>📋 ข้อมูลที่บันทึกไว้ในรอบถัดไป</h4>
-        </div>
-        <div class="summary-content">
-            <table class="simple-summary-table">
-                <thead>
-                    <tr>
-                        <th>ของรางวัล</th>
-                        <th style="text-align: right;">จำนวนที่รอคิว</th>
-                    </tr>
-                </thead>
-                <tbody id="next-summary-body">
-                    </tbody>
-                <tfoot>
-                    <tr style="border-top: 2px solid #444;">
-                        <td><b>รวมทั้งหมด</b></td>
-                        <td style="text-align: right;"><b id="next-summary-total">0 / 100</b></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    </div>
-
-  
-
-
     <!-- Modal สำหรับเลือกรอบรางวัล -->
     <div id="prizeModal" class="modal-overlay">
         <div class="modal-content">
@@ -147,9 +90,9 @@
 
     <div class="inventory-section">
         <h3>📦 คลังสินค้าคงเหลือจริง</h3>
-        <div id="inventory-grid" class="inventory-grid">
-            
-        </div>
+        <p class="inventory-note">แก้ไขจำนวนสินค้าคงเหลือได้ตรงนี้และกดบันทึกเพื่ออัปเดตระบบ</p>
+        <div id="inventory-grid" class="inventory-grid"></div>
+        <button class="inventory-save-btn" onclick="saveInventoryStock()">💾 บันทึกจำนวนสต็อก</button>
     </div>    
 
     <div class="sponser">
