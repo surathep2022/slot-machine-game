@@ -275,10 +275,12 @@ function renderOrderGrid() {
     if (!container) return;
 
     container.innerHTML = '';
+    const completedCount = Math.min(Math.max(parseInt(dbTotalSpins) || 0, 0), 100);
 
     for (let slotNumber = 1; slotNumber <= 100; slotNumber++) {
         const box = document.createElement('div');
-        box.className = 'grid-box';
+        const isCompleted = slotNumber <= completedCount;
+        box.className = `grid-box${isCompleted ? ' completed' : ''}`;
         box.id = `box-${slotNumber}`;
         box.onclick = () => openModal(slotNumber);
 
@@ -631,4 +633,5 @@ db.ref().on('value', (snapshot) => {
     // สั่งรันชุดแสดงผลทั้งหมดให้ทำงานสัมพันธ์กันสดๆ แบบ Real-time
     updateDashboard();
     updateStatusTags(dbNextQueue);
+    renderOrderGrid();
 });
