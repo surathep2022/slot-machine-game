@@ -12,27 +12,27 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <script>
-    // // ข้อมูล Config ของคุณ
-    const firebaseConfig = {
-        apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
-        authDomain: "slot-machine-ff297.firebaseapp.com",
-        databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "slot-machine-ff297",
-        storageBucket: "slot-machine-ff297.firebasestorage.app",
-        messagingSenderId: "196859530049",
-        appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
-    };
+    //  ข้อมูล Config ของคุณ
+    // const firebaseConfig = {
+    //     apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
+    //     authDomain: "slot-machine-ff297.firebaseapp.com",
+    //     databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
+    //     projectId: "slot-machine-ff297",
+    //     storageBucket: "slot-machine-ff297.firebasestorage.app",
+    //     messagingSenderId: "196859530049",
+    //     appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
+    // };
 
     // DB Test Config
-    // const firebaseConfig = {
-    //     apiKey: "AIzaSyAimyAzniVUuEbFmriLyFibMeIIvpeVceo",
-    //     authDomain: "slot-machine-test-7e89c.firebaseapp.com",
-    //     databaseURL: "https://slot-machine-test-7e89c-default-rtdb.asia-southeast1.firebasedatabase.app",
-    //     projectId: "slot-machine-test-7e89c",
-    //     storageBucket: "slot-machine-test-7e89c.firebasestorage.app",
-    //     messagingSenderId: "564330481247",
-    //     appId: "1:564330481247:web:f134ce656cd0a5d2113dea"
-    // };
+    const firebaseConfig = {
+        apiKey: "AIzaSyAimyAzniVUuEbFmriLyFibMeIIvpeVceo",
+        authDomain: "slot-machine-test-7e89c.firebaseapp.com",
+        databaseURL: "https://slot-machine-test-7e89c-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "slot-machine-test-7e89c",
+        storageBucket: "slot-machine-test-7e89c.firebasestorage.app",
+        messagingSenderId: "564330481247",
+        appId: "1:564330481247:web:f134ce656cd0a5d2113dea"
+    };
 
     // เริ่มต้น Firebase
     firebase.initializeApp(firebaseConfig);
@@ -79,8 +79,11 @@
         
 
     <div class="order-container">
-        <h3>🧩 กำหนดลำดับรางวัลในรอบ 100 ครั้ง</h3>
-        <p class="order-info">คลิกแต่ละช่องเพื่อเลือกของรางวัลสำหรับลำดับที่ 1–100 ก่อนเริ่มหมุน</p>
+        <div class="order-header">
+            <h3>🧩 กำหนดลำดับรางวัลในรอบ 100 ครั้ง</h3>
+        </div>
+        <p class="order-info">คลิกแต่ละช่องเพื่อเลือกของรางวัลสำหรับลำดับที่ 100 ก่อนเริ่มหมุน</p>
+        <div class="order-range-tabs" id="order-range-tabs"></div>
         <div id="order-grid" class="order-grid"></div>
         <div class="order-actions">
             <button class="btn-save" onclick="savePrizeOrder()">💾 บันทึกลำดับรางวัล</button>

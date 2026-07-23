@@ -2,26 +2,26 @@
 
 
 // DB ใช้งานจริง Config
-const firebaseConfig = {
-    apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
-    authDomain: "slot-machine-ff297.firebaseapp.com",
-    databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "slot-machine-ff297",
-    storageBucket: "slot-machine-ff297.firebasestorage.app",
-    messagingSenderId: "196859530049",
-    appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
-};
+// const firebaseConfig = {
+//     apiKey: "AIzaSyADzVirlflWjw7ux1i8fRNFUNSBT139-6I",
+//     authDomain: "slot-machine-ff297.firebaseapp.com",
+//     databaseURL: "https://slot-machine-ff297-default-rtdb.asia-southeast1.firebasedatabase.app",
+//     projectId: "slot-machine-ff297",
+//     storageBucket: "slot-machine-ff297.firebasestorage.app",
+//     messagingSenderId: "196859530049",
+//     appId: "1:196859530049:web:09ba13fa577fd5fbe1efc0"
+// };
 
 // DB Test Config
-// const firebaseConfig = {
-//   apiKey: "AIzaSyAimyAzniVUuEbFmriLyFibMeIIvpeVceo",
-//   authDomain: "slot-machine-test-7e89c.firebaseapp.com",
-//   databaseURL: "https://slot-machine-test-7e89c-default-rtdb.asia-southeast1.firebasedatabase.app",
-//   projectId: "slot-machine-test-7e89c",
-//   storageBucket: "slot-machine-test-7e89c.firebasestorage.app",
-//   messagingSenderId: "564330481247",
-//   appId: "1:564330481247:web:f134ce656cd0a5d2113dea"
-// };
+const firebaseConfig = {
+  apiKey: "AIzaSyAimyAzniVUuEbFmriLyFibMeIIvpeVceo",
+  authDomain: "slot-machine-test-7e89c.firebaseapp.com",
+  databaseURL: "https://slot-machine-test-7e89c-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "slot-machine-test-7e89c",
+  storageBucket: "slot-machine-test-7e89c.firebasestorage.app",
+  messagingSenderId: "564330481247",
+  appId: "1:564330481247:web:f134ce656cd0a5d2113dea"
+};
 
 // เริ่มต้น Firebase
 firebase.initializeApp(firebaseConfig);
@@ -241,7 +241,7 @@ async function startSpin() {
     //     });
     // }
 
-    const currentRoundIndex = dbTotalSpins % 100; // รอบที่ 0 - 99
+    const currentRoundIndex = dbTotalSpins; // ใช้ลำดับจริงต่อเนื่องจากครั้งที่ 1, 2, 3...
     let specialPrizeName = "";
 
     // 🎯 ตรรกะสลับแจกกระจายตัวอย่างทั่วถึง (สัดส่วน 20 : 40 : 40)
@@ -256,7 +256,7 @@ async function startSpin() {
         specialPrizeName = 'ดิวเบอร์รี่';
     }
 
-    // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
+    // --- กำหนดรางวัลตามลำดับที่ตั้งไว้ใน Firebase เท่านั้น ---
     let winPrize = null;
     let targetIdx = -1;
     const orderedPrize = getOrderedPrizeForTurn();
@@ -265,61 +265,16 @@ async function startSpin() {
         winPrize = orderedPrize;
         targetIdx = prizes.findIndex((prize) => prize.name === winPrize.name);
     } else {
-        let availablePrizes = [];
-
-        // 🎯 เช็คว่าเป็นรอบสุ่มรางวัลอื่น (รอบที่ลงท้ายด้วย 5 หรือ 0)
-        const isRandomOtherRound = (currentRoundIndex % 5 === 0);
-
-        // 🛒 เช็คสต็อกของกระเป๋าช้อปปิ้งในฐานข้อมูล ณ ปัจจุบันก่อนว่าเหลือไหม
-        const shoppingBagStock = dbStock["กระเป๋าช้อปปิ้ง"] || 0;
-
-        prizes.forEach((prize, index) => {
-            let count = dbStock[prize.name] || 0;
-            
-            if (isRandomOtherRound) {
-                if (prize.name === "กระเป๋าช้อปปิ้ง") {
-                    return;
-                }
-            } else {
-                if (shoppingBagStock > 0) {
-                    if (prize.name !== "กระเป๋าช้อปปิ้ง") {
-                        return;
-                    }
-                } else {
-                    if (prize.name === "กระเป๋าช้อปปิ้ง") {
-                        return;
-                    }
-                }
-            }
-
-            for (let i = 0; i < count; i++) { 
-                availablePrizes.push(index); 
+        Swal.fire({
+            title: 'ระบบกำลังทำงาน',
+            text: 'กรุณารอสักครู่ก่อนเริ่มหมุน',
+            icon: 'warning',
+            customClass: {
+                popup: 'custom-swal-popup',
+                title: 'custom-swal-title'
             }
         });
-
-        if (availablePrizes.length === 0) {
-            prizes.forEach((prize, index) => {
-                let count = dbStock[prize.name] || 0;
-                for (let i = 0; i < count; i++) {
-                     availablePrizes.push(index); 
-                }
-            });
-        }
-
-        let attempts = 0; 
-
-        while (attempts < 10) {
-            const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-            targetIdx = availablePrizes[randomIndex];
-            winPrize = prizes[targetIdx];
-
-            const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
-            
-            if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
-                break;
-            }
-            attempts++;
-        }
+        return;
     }
 
     lastWonPrizeName = winPrize.name; 

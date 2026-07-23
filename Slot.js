@@ -99,7 +99,7 @@ function formatDisplayName(fullName) {
 }
 
 function getOrderedPrizeForTurn() {
-    const slotKey = String(dbTotalSpins + 1);
+    const slotKey = String((dbTotalSpins % 100) + 1);
     const orderedName = dbPrizeOrder[slotKey];
     if (!orderedName) return null;
 
@@ -212,39 +212,19 @@ async function startSpin() {
     // --- เริ่มกระบวนการหมุนปกติ (ถ้ายังไม่ครบ 100) ---
     const currentCustomer = dbQueue[0];
 
-    // --- ตรรกะการสุ่มรางวัลตาม Stock จาก Firebase ---
+    // --- กำหนดรางวัลตามลำดับที่ตั้งไว้ใน Firebase เท่านั้น ---
     let winPrize = null;
     const orderedPrize = getOrderedPrizeForTurn();
 
     if (orderedPrize) {
         winPrize = orderedPrize;
     } else {
-        let availablePrizes = [];
-        prizes.forEach((prize, index) => {
-            let count = dbStock[prize.name] || 0;
-            for (let i = 0; i < count; i++) { availablePrizes.push(index); }
+        Swal.fire({
+            title: 'ยังไม่ได้กำหนดลำดับรางวัล',
+            text: 'กรุณาเพิ่มลำดับรางวัลสำหรับครั้งนี้ในหน้า Admin ก่อนเริ่มหมุน',
+            icon: 'warning'
         });
-
-        if (availablePrizes.length === 0) {
-            Swal.fire('ของหมด', 'ของรางวัลในสต็อกหมดแล้ว', 'warning');
-            return;
-        }
-
-        let targetIdx = -1;
-        let attempts = 0; 
-
-        while (attempts < 10) {
-            const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-            targetIdx = availablePrizes[randomIndex];
-            winPrize = prizes[targetIdx];
-
-            const uniquePrizesLeft = [...new Set(availablePrizes.map(idx => prizes[idx].name))];
-            
-            if (winPrize.name !== lastWonPrizeName || uniquePrizesLeft.length === 1) {
-                break;
-            }
-            attempts++;
-        }
+        return;
     }
 
     // บันทึกชื่อรางวัลนี้ไว้ เช็คกับคิวคนถัดไป

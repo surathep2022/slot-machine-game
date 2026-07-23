@@ -214,9 +214,98 @@ function updateDashboard() {
 }
 
 
-// เก็บข้อมูลลำดับรางวัลที่เลือกไว้สำหรับ 100 ครั้ง
+// เก็บข้อมูลลำดับรางวัลสำหรับ 100 ช่องที่ใช้ซ้ำทุก 100 ครั้ง
 let selectedOrders = {};
 let currentActiveSlot = null;
+let currentOrderRange = 100;
+let availableOrderRanges = [100];
+
+function getDisplaySlotNumber(slotNumber) {
+    const normalizedSlot = parseInt(slotNumber, 10) || 1;
+    return normalizedSlot + (dbTotalSpins >= 100 ? 100 : 0);
+}
+
+function syncOrderRangeWithSpinCount() {
+    currentOrderRange = 100;
+    availableOrderRanges = [100];
+}
+
+function saveOrderRangeState() {
+    const config = {
+        currentOrderRange,
+        availableOrderRanges
+    };
+
+    try {
+        localStorage.setItem('prizeOrderRangeConfig', JSON.stringify(config));
+    } catch (error) {
+        console.warn('Unable to save order range config to localStorage', error);
+    }
+
+    if (db && db.ref) {
+        db.ref('prizeOrderConfig').set(config).catch(() => {});
+    }
+}
+
+function loadOrderRangeState(configData) {
+    const fallbackConfig = (() => {
+        try {
+            return JSON.parse(localStorage.getItem('prizeOrderRangeConfig') || 'null');
+        } catch (error) {
+            return null;
+        }
+    })();
+
+    const source = configData || fallbackConfig || { currentOrderRange: 100, availableOrderRanges: [100] };
+    const parsedRanges = [100];
+
+    if (parsedRanges.length > 0) {
+        availableOrderRanges = [...new Set(parsedRanges)].sort((a, b) => a - b);
+    } else {
+        availableOrderRanges = [100];
+    }
+
+    const parsedCurrent = parseInt(source.currentOrderRange, 10);
+    currentOrderRange = availableOrderRanges.includes(parsedCurrent)
+        ? parsedCurrent
+        : availableOrderRanges[availableOrderRanges.length - 1] || 100;
+}
+
+function getOrderRangeBounds(range) {
+    const start = ((range / 100) - 1) * 100 + 1;
+    return { start, end: range };
+}
+
+function updateOrderRangeControls() {
+    const title = document.querySelector('.order-container h3');
+    const info = document.querySelector('.order-info');
+    const tabsContainer = document.getElementById('order-range-tabs');
+    const displayStart = dbTotalSpins >= 100 ? 101 : 1;
+    const displayEnd = dbTotalSpins >= 100 ? 200 : 100;
+
+    if (title) {
+        title.textContent = `🧩 กำหนดลำดับรางวัลในช่วง ${displayStart}–${displayEnd}`;
+    }
+
+    if (info) {
+        info.textContent = `คลิกแต่ละช่องเพื่อเลือกของรางวัลสำหรับลำดับที่ ${displayStart}–${displayEnd} ก่อนเริ่มหมุน`;
+    }
+
+    if (tabsContainer) {
+        tabsContainer.innerHTML = '';
+    }
+}
+
+function setOrderRange(range) {
+    if (!availableOrderRanges.includes(range)) return;
+    currentOrderRange = range;
+    saveOrderRangeState();
+    renderOrderGrid();
+}
+
+function toggleOrderRange() {
+    return;
+}
 
 function getPrizeByName(prizeName) {
     return prizes.find(prize => prize.name === prizeName) || null;
@@ -239,22 +328,29 @@ function getAvailableStock(prizeName, excludeSlot = null) {
 }
 
 function renderOrderGrid() {
+    syncOrderRangeWithSpinCount();
+    updateOrderRangeControls();
+
     const container = document.getElementById('order-grid');
     if (!container) return;
 
     container.innerHTML = '';
-    const completedCount = Math.min(Math.max(parseInt(dbTotalSpins) || 0, 0), 100);
+    const { start, end } = getOrderRangeBounds(currentOrderRange);
+    const normalizedSpinCount = Math.max(0, parseInt(dbTotalSpins, 10) || 0);
+    const cycleIndex = normalizedSpinCount % 100;
+    const completedLimit = Math.min(cycleIndex, end - start);
 
-    for (let slotNumber = 1; slotNumber <= 100; slotNumber++) {
+    for (let slotNumber = start; slotNumber <= end; slotNumber++) {
         const box = document.createElement('div');
-        const isCompleted = slotNumber <= completedCount;
+        const relativeSlot = slotNumber - start + 1;
+        const isCompleted = relativeSlot <= completedLimit;
         box.className = `grid-box${isCompleted ? ' completed' : ''}`;
         box.id = `box-${slotNumber}`;
         box.onclick = () => openModal(slotNumber);
 
         const numberLabel = document.createElement('span');
         numberLabel.className = 'box-number';
-        numberLabel.textContent = slotNumber;
+        numberLabel.textContent = getDisplaySlotNumber(slotNumber);
         box.appendChild(numberLabel);
 
         const prize = selectedOrders[slotNumber];
@@ -284,7 +380,7 @@ function renderOrderGrid() {
 
 function openModal(slotNumber) {
     currentActiveSlot = slotNumber;
-    document.getElementById('modalTitle').textContent = `เลือกของรางวัลสำหรับลำดับที่ ${slotNumber}`;
+    document.getElementById('modalTitle').textContent = `เลือกของรางวัลสำหรับลำดับที่ ${getDisplaySlotNumber(slotNumber)}`;
 
     const pickerContainer = document.getElementById('prizePicker');
     pickerContainer.innerHTML = '';
@@ -373,6 +469,8 @@ function savePrizeOrder() {
         if (prize && prize.name) payload[slot] = prize.name;
     });
 
+    saveOrderRangeState();
+
     db.ref().update({ prizeOrder: payload }).then(() => {
         Swal.fire('สำเร็จ', `บันทึกลำดับรางวัลเรียบร้อยแล้ว (${Object.keys(payload).length} ช่อง)`, 'success');
     });
@@ -380,6 +478,9 @@ function savePrizeOrder() {
 
 function clearAllOrders() {
     Object.keys(selectedOrders).forEach(key => delete selectedOrders[key]);
+    availableOrderRanges = [100];
+    currentOrderRange = 100;
+    saveOrderRangeState();
     renderOrderGrid();
     savePrizeOrder();
 }
@@ -399,6 +500,7 @@ function loadPrizeOrderFromFirebase(orderData) {
 }
 
 function initGrid() {
+    updateOrderRangeControls();
     renderOrderGrid();
 }
 
@@ -611,6 +713,7 @@ db.ref().on('value', (snapshot) => {
     const historyObj = data.prizeHistory || {};
     dbHistory = Object.keys(historyObj).map(key => historyObj[key]);
 
+    loadOrderRangeState(data.prizeOrderConfig || null);
     loadPrizeOrderFromFirebase(data.prizeOrder || {});
 
     // วาดกล่อง Input ตั้งค่าเริ่มต้น (วาดครั้งเดียวเพื่อป้องกันหน้าจอกระตุกตอนกำลังพิมพ์)

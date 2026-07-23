@@ -326,7 +326,7 @@
         .btn-save {
             width: 100%;
             padding: 15px;
-            border-radius: 15px;
+            border-radius: 8px;
             border: none;
             font-size: 1.1rem;
             font-weight: bold;
@@ -510,11 +510,80 @@
       margin-bottom: 30px;
     }
 
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
     .order-container h3 {
-      margin-top: 0;
-      margin-bottom: 20px;
+      margin: 0;
       color: #212529;
       text-align: center;
+      flex: 1;
+    }
+
+    .order-range-btn {
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: 'Kanit', sans-serif;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+    }
+
+    .order-range-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.75;
+    }
+
+    .order-range-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .order-range-tab {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #334155;
+      padding: 7px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: 'Kanit', sans-serif;
+      transition: all 0.2s ease;
+    }
+
+    .order-range-tab.active {
+      background: #1d4ed8;
+      color: white;
+      border-color: #1d4ed8;
+    }
+
+    .order-range-tab-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .order-range-remove-btn {
+      border: none;
+      background: #ef4444;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
     }
 
     /* ตาราง 10 แถว x 10 คอลัมน์ */
@@ -674,6 +743,7 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      font-family: 'Kanit', sans-serif;
       font-weight: 600;
     }
 
